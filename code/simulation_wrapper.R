@@ -1,7 +1,5 @@
 ######################################
-# This file contains function that we sue to simulate the data and then solve it with naive model and also CJSm
-# Some of these functions are the same as in Kery and Schaub (2011) book
-# while other were developed specifically for CJSm models
+# This file contains function that runns naive CJS and CJS with constant over time parameters over the given data.
 
 withAutoprint({
 cat('\ninitializing run_CJSm_c_c_c()') 
