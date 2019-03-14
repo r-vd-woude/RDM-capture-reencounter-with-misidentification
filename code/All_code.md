@@ -73,7 +73,6 @@ Now we source helper functions
 source('https://git.io/fhhtZ')
 # wrapper for the analsyis of CJS and CJSm over a dataset
 source('https://git.io/fjeBQ') 
-# here we also need to source the second set of functions
 ```
 
 ## 1 Simulate and solve Phi_dot_P_dot_Theta_dot models
@@ -94,7 +93,7 @@ PHI <- matrix(phi, ncol = n.occasions-1, nrow = sum(marked))
 P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
 ```
 
-##### Define values for Theta and simulate
+#### Define values for Theta and simulate
 
 90% correct identification
 ```{r}
@@ -103,6 +102,7 @@ THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
 ```
 95% correct identification 
+
 Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
 
 ```{r}
@@ -113,6 +113,7 @@ CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
 ```
 
 100% correct identification
+
 Here we use the orignal simulated dataset `CH_90$CH_no_misr`
 ```{r}
 CH_100<-CH_90$CH_no_misr
@@ -166,6 +167,7 @@ THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
 ```
 95% correct identification 
+
 Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
 
 ```{r}
@@ -176,6 +178,7 @@ CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
 ```
 
 100% correct identification
+
 Here we use the orignal simulated dataset `CH_90$CH_no_misr`
 ```{r}
 CH_100<-CH_90$CH_no_misr
@@ -225,6 +228,7 @@ THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
 ```
 95% correct identification 
+
 Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
 
 ```{r}
@@ -234,6 +238,7 @@ CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
                                       marked=marked)
 ```
 100% correct identification
+
 Here we use the orignal simulated dataset `CH_90$CH_no_misr`
 ```{r}
 CH_100<-CH_90$CH_no_misr
@@ -285,6 +290,7 @@ THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
 ```
 95% correct identification 
+
 Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
 
 ```{r}
@@ -295,6 +301,7 @@ CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
 ```
 
 100% correct identification
+
 Here we use the orignal simulated dataset `CH_90$CH_no_misr`
 ```{r}
 CH_100<-CH_90$CH_no_misr
@@ -347,7 +354,7 @@ P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
 THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 ```
 
-#### Execute function
+#### Simulate data
 ```{r}
 CH_misr <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
 ```
@@ -590,7 +597,7 @@ print(cjsm.T.c.c, digits=3)
 
 ### 2.5 Plot the results
 
-Extract model outputs
+#### Extract model outputs
 ```{r}
 XX<-seq(1, n.occasions, by=1)
 
@@ -630,7 +637,7 @@ Naive_UCI<-sapply(XX, FUN=function(x)
 	  x*cjs.T.c.with.misidentification$BUGSoutput$sims.list$phi.beta,
 	  0.925)))
 ```
-Plot
+#### Plot
 ```{r}
 plot(Naive_Median~XX, ylim=range(c(Naive_LCI, Naive_UCI, CJS_no_mr_LCI, CJS_no_mr_UCI)),
      las=1, col='#ef8a62',  ylab='apparent survial probability',
@@ -655,9 +662,9 @@ points(CJS_no_mr_UCI~XX, bg='#1b9e77', col=NULL,pch=25)
 
 ## 3 Black-tailed godwits annual survival
 Here we analyse capture-resight dataset of black-tailed godwits captured in Friesland, The Netherlands. The raw data consists of three files:
-- 1. the main dataset 'black-tailed_godwits_CH.csv';
-- 2. 'black-tailed_x.Phi.csv' - the matrix for Phi that indicates whether individual [i,] is juvenile `1` or adult `2` at the time [,t] 'black-tailed_x.Phi.csv'
-- 3. 'black-tailed_x.P.csv' - the matrix with information on whether individual [i,] at time [,t] is 1st year juvenile `1`, 2nd year juvenile `2`, adult marked as juvenile `3` or adult marked as breeding adult `4`.
+- the main dataset `black-tailed_godwits_CH.csv`;
+- `black-tailed_x.Phi.csv` - the matrix for Phi that indicates whether individual [i,] is juvenile `1` or adult `2` at the time [,t]
+- `black-tailed_x.P.csv` - the matrix with information on whether individual [i,] at time [,t] is 1st year juvenile `1`, 2nd year juvenile `2`, adult marked as juvenile `3` or adult marked as breeding adult `4`.
 
 ### 3.1 CJSm model with black-tailed godwit data
 
@@ -672,7 +679,7 @@ if (Use_local_data) {
                    check.names=FALSE, header=FALSE)
 } else {
    CH<-as.matrix(read.csv('https://git.io/fhhtJ', check.names=FALSE))
-   x.Phi<-as.matrix(read.csv('https://git.io/fje0H', check.names=FALSE, header=FALSE)
+   x.Phi<-as.matrix(read.csv('https://git.io/fje0H', check.names=FALSE, header=FALSE))
    x.P<-as.matrix(read.csv('https://git.io/fje0Q', check.names=FALSE, header=FALSE))
 }
 
@@ -786,7 +793,7 @@ for (i in 1:nind){
 ",fill = TRUE)
 sink()
 ```
-##### Bundle data, generate intitials and prepare model run
+#### Bundle data, generate intitials and prepare model run
 ```{r}
 jags.data <- list(y = CH, f = f, nind = dim(CH)[1], n.occasions = dim(CH)[2],
                   N_reads=N_reads, N_marks_used=N_marks_used, x.Phi=x.Phi,x.P=x.P)
@@ -890,7 +897,7 @@ for (i in 1:nind){
 sink()
 ```
 
-##### Bundle data, generate intitials and prepare model run
+#### Bundle data, generate intitials and prepare model run
 ```{r}
 # Bundle data
 jags.data <- list(y = CH_flat, f = f, nind = dim(CH_flat)[1],
