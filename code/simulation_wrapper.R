@@ -6,7 +6,6 @@
 withAutoprint({
 cat('\ninitializing run_CJSm_c_c_c()') 
 
-
 run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, ni=3000, nb=1500) {
   CH_input<-CH
   if (run_naive) {

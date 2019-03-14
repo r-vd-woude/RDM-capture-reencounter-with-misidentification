@@ -71,7 +71,7 @@ simul.cjs.multiple.sightings <- function(PHI, P, THETA, marked, CH=NULL){
 
 #####################################################
 # 2. This function from Schaub and Kery 2011 helps to set up initital under single readings
-  cat('\nknown.state.cjs.mult()' )
+  cat('\nknown.state.cjs()' )
 known.state.cjs <- function(ch){
    state <- ch
    for (i in 1:dim(ch)[1]){
