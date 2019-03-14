@@ -87,7 +87,7 @@ known.state.cjs <- function(ch){
 
 #####################################################
 # 3. This function from Schaub and Kery 2011 helps to create a matrix of initial values for latent state z
-  cat('\nknown.state.cjs.mult()' )
+  cat('\ncjs.init.z()' )
 cjs.init.z <- function(ch,f){
    for (i in 1:dim(ch)[1]){
       if (sum(ch[i,])==1) next
