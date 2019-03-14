@@ -2,7 +2,7 @@
 # This file contains function that runns naive CJS and CJS with constant over time parameters over the given data.
 
 withAutoprint({
-cat('\ninitializing run_CJSm_c_c_c()') 
+cat('sourcing run_CJSm_c_c_c()') 
 
 run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, ni=3000, nb=1500) {
   CH_input<-CH

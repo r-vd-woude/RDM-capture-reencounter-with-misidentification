@@ -5,7 +5,7 @@
 # while other were developed specifically for CJSm models
 
 withAutoprint({
-cat('initializing functions...') 
+cat('sourcing functions...') 
 #####################################################
 # 1.The function generally assumes that there are several sightings possible, so it converts P to Lambda and does the simulation
   cat('\nsimul.cjs.multiple.sightings()' )
