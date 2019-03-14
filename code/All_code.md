@@ -1,4 +1,4 @@
-# Supplementary code to 'Biased survival estimates by Cormack-Jolly-Seber models due to tag-misread: evidence and the solution' by E. Rakhimberidev et al., Methods in Ecology and Evolution, submitted
+# Supplementary code to 'Biased survival estimates by Cormack-Jolly-Seber models due to misidentification: evidence and the solution' by E. Rakhimberidev et al., Methods in Ecology and Evolution, submitted
 
 _code by Eldar Rakhimberdiev_
 
