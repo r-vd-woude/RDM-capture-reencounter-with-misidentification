@@ -67,7 +67,7 @@ simul.cjs.multiple.sightings <- function(PHI, P, THETA, marked, CH=NULL){
    CH_no_misr<-apply(CH_no_misr, c(1,2), FUN=function(x) ifelse(x==-1,1, x))
    return(list(CH=CH, CH_no_misr=CH_no_misr))
 }
-  cat('Done')
+  cat('   Done')
 
 #####################################################
 # 2. This function from Schaub and Kery 2011 helps to set up initital under single readings
@@ -83,10 +83,26 @@ known.state.cjs <- function(ch){
    state[state==0] <- NA
    return(state)
    }
-   cat('Done')
+   cat('   Done')
 
 #####################################################
-# 3. This function sets up inititals under multiple readings values
+# 3. This function from Schaub and Kery 2011 helps to create a matrix of initial values for latent state z
+  cat('\nknown.state.cjs.mult()' )
+cjs.init.z <- function(ch,f){
+   for (i in 1:dim(ch)[1]){
+      if (sum(ch[i,])==1) next
+      n2 <- max(which(ch[i,]==1))
+      ch[i,f[i]:n2] <- NA
+      }
+   for (i in 1:dim(ch)[1]){
+   ch[i,1:f[i]] <- NA
+   }
+   return(ch)
+   }
+   cat('   Done')
+
+#####################################################
+# 4. This function sets up inititals under multiple readings values
   cat('\nknown.state.cjs.mult()' )
 known.state.cjs.mult<- function(ch) {
   state <- sign(ch)
@@ -99,14 +115,14 @@ known.state.cjs.mult<- function(ch) {
   state[state==0] <- NA
   return(state)
 }
-  cat('Done')
+  cat('   Done')
 
   cat('\nget.first()' )
 
 #####################################################
-# 3. This function from from Schaub and Kery (2011) siply finds the first positive values in the vector.
+# 5. This function from from Schaub and Kery (2011) siply finds the first positive values in the vector.
 get.first <- function(x) min(which(x!=0))
-  cat('Done')
+  cat('   Done')
 
 cat('\nyou are all set \n')
 }, echo=FALSE)
