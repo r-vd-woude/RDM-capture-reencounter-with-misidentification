@@ -1,4 +1,4 @@
-# Supplementary code to 'Biased survival estimates by Cormack-Jolly-Seber models due to tag-misread: evidence and the solution' by E. Rakhimberidev et al., Methods in Ecology and Evolution, submitted
+# Supplementary code to 'Biased survival estimates by Cormack-Jolly-Seber models due to misidentification: evidence and the solution' by E. Rakhimberidev et al., Methods in Ecology and Evolution, submitted
 
 _code by Eldar Rakhimberdiev_
 
@@ -63,12 +63,12 @@ if (Use_local_data & !'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) 
 ### 0.4 load libraries and source CJSm functions
 We need `R2jags` to run jags code. Note that to run the models you will also have to install jags software (Plummer 2011) from [here]( http://mcmc-jags.sourceforge.net).
 
-```
+```{r}
 library(R2jags)
 ```
 
 Now we source helper functions
-```
+```{r}
 # general functions
 source('https://git.io/fhhtZ')
 # wrapper for the analsyis of CJS and CJSm over a dataset
@@ -608,7 +608,7 @@ CJS_no_mr_LCI<-sapply(XX, FUN=function(x)
        plogis(quantile(cjs.T.c.no_misr$BUGSoutput$sims.list$phi.mu +
        x*cjs.T.c.no_misr$BUGSoutput$sims.list$phi.beta, 0.025)))
 CJS_no_mr_UCI<-sapply(XX, FUN=function(x)
-       plogis(quantile(cjs.T.c.no_misr$BUGSoutput$sims.list$phi.mu 
+       plogis(quantile(cjs.T.c.no_misr$BUGSoutput$sims.list$phi.mu +
 	   x*cjs.T.c.no_misr$BUGSoutput$sims.list$phi.beta, 0.925)))
 
 CJSm_Median<-sapply(XX, FUN=function(x) 
@@ -820,6 +820,7 @@ nc <- 5
 ```{r}
 if (Run_everything) {
 a<-Sys.time()
+   # (BRT ~ 2.5 hours)
    cjsm.godwits <- jags.parallel(jags.data, inits, parameters,
         "cjsm-Phi_t_plus_age_plus_year_P_tsm_plus_year_plus_raneff_Theta_c.jags",
 		n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  
@@ -926,6 +927,7 @@ nc <- 5
 #### Run the model
 ```{r}
 if (Run_everything) {
+   # (BRT ~ 2.5 hours)
   cjs.naive.godwits <- jags.parallel(jags.data, inits, parameters, 
    "cjs-naive-Phi_t_plus_age_plus_year_P_tsm_plus_year_plus_raneff.jags",
    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  
@@ -1123,12 +1125,11 @@ print(plogis(quantile(cjs.naive.godwits$BUGSoutput$sims.list$p.y+
 # sigma - RE on resighting prob.
 print(sqrt(quantile(cjs.naive.godwits$BUGSoutput$sims.list$sigma2,
            c(0.025, 0.5, 0.975))), digits=3)
-
 ```
 
 P.S. The html file from this markdown can be recereated with folloing code
 ```{r eval=FALSE}
-download.file('XXX', 'tmp.rmd', cacheOK = FALSE)
+download.file('https://raw.githubusercontent.com/eldarrak/CJS-with-misidentification/master/code/All_code.md', 'tmp.rmd', cacheOK = FALSE)
 rmarkdown::render('tmp.rmd', output_format = 'html_document',
         output_options=list(toc=TRUE, toc_float=list(collapsed=FALSE)), 
         encoding='utf-8')
