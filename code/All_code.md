@@ -2,7 +2,7 @@
 
 _code by Eldar Rakhimberdiev_
 
-You might enjoy [html version of this supplementary](http://htmlpreview.github.io/?https://github.com/eldarrak/XXXX).
+You might enjoy [html version of this supplementary](http://htmlpreview.github.io/?https://raw.githubusercontent.com/eldarrak/CJS-with-misidentification/master/code/All_code.html).
 
 ## 0. Set up output and run options
 ```{r}
