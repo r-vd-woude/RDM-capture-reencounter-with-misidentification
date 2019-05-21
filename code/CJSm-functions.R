@@ -9,6 +9,7 @@ cat('sourcing functions...')
 #####################################################
 # 1.The function generally assumes that there are several sightings possible, so it converts P to Lambda and does the simulation
   cat('\nsimul.cjs.multiple.sightings()' )
+
 simul.cjs.multiple.sightings <- function(PHI, P, THETA, marked, CH=NULL){
    # in this function I introduce multiple resightings.
    
@@ -52,16 +53,25 @@ simul.cjs.multiple.sightings <- function(PHI, P, THETA, marked, CH=NULL){
 	 # Generate misreadings
      Misread<-sapply(Resighted ,  FUN=function(x)  rbinom(1, CH[x,t], 1-THETA[x,t-1])) #
      if (sum(Misread>0)) {
+	    Assinged<-c()
         CH[Resighted,t]<-CH[Resighted,t] - Misread
         # assign misreading to any other number that was already in use
-        # 1. which individuals are marked   
-        Already_marked<-sum(marked[1:(t-1)])
+		Misread_IDs<-Resighted[Misread>0]
+        for (m in 1:length(Misread_IDs)) {
+		   Marked_current<-1:sum(marked[1:(t-1)])
+		   Marked_current_except_cur_misread<- 
+		        Marked_current[Marked_current!=Misread_IDs[m]]
+		   Assinged<-c(Assinged, sample(Marked_current, Misread[Misread>0][m], replace=TRUE))
+		 }
+		# 1. which individuals are marked   
+        #Already_marked<-sum(marked[1:(t-1)])
         # 2. randomly add some ones there..
-        Assinged<-sample.int(Already_marked, sum(Misread), replace=TRUE)
+        #Assinged<-sample.int(Already_marked, sum(Misread), replace=TRUE)
         # give them one
         Rle<-rle(sort(Assinged))
         CH[Rle$values,t]<-CH[Rle$values,t]+Rle$lengths
-     }
+    
+	}
    }
    CH<-apply(CH, c(1,2), FUN=function(x) ifelse(x==-1,1, x))
    CH_no_misr<-apply(CH_no_misr, c(1,2), FUN=function(x) ifelse(x==-1,1, x))
