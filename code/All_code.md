@@ -1007,7 +1007,7 @@ abline(h=seq(0, 1, by=0.1), lty=3, col=grey(0.5))
 abline(h=seq(0, 1, by=0.5), lty=2, col=grey(0.5))
 
 points(Res_juveniles$Phi.cjsm.median~I(Res_juveniles$Year.Phi+Shift), 
-       ylim=c(0.6, 1), las=1, pch=23, bg='#1b9e77')   
+       ylim=c(0.6, 1), las=1, pch=23, bg='#1b9e77', col='#1b9e77')   
 segments(y0=Res_juveniles$Phi.cjsm.lci,
          y1=Res_juveniles$Phi.cjsm.uci,
 		 x0=Res_juveniles$Year.Phi+Shift, lwd=2, col='#1b9e77')
@@ -1020,7 +1020,7 @@ segments(y0=Res_juveniles$Phi.cjsn.lci,
 
 #Panel B adults
 plot(Res_adults$Phi.cjsm.median~Res_adults$Year.Phi,
-     ylim=c(0.75, 1), las=1, pch=18, ylab='',
+     ylim=c(0.75, 1), las=1, ylab='',
 	 xlab='Year', type='n')  
 
 abline(v=2004:2020, lty=3, col=grey(0.5))
@@ -1030,7 +1030,7 @@ abline(h=seq(0.5, 1, by=0.02), lty=3, col=grey(0.5))
 abline(h=seq(0.5, 1, by=0.1), lty=2, col=grey(0.5))
 
 points(Res_adults$Phi.cjsm.median~I(Res_adults$Year.Phi+Shift), 
-       ylim=c(0.6, 1), las=1, pch=23, bg='#1b9e77')   
+       ylim=c(0.6, 1), las=1, pch=23, bg='#1b9e77', col='#1b9e77')   
 
 segments(y0=Res_adults$Phi.cjsm.lci,
          y1=Res_adults$Phi.cjsm.uci,
