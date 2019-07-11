@@ -5,14 +5,11 @@ withAutoprint({
 cat('sourcing make_two_cells()') 
 
 make_two_cells<-function(filename=NULL, N_Models_to_use=100) {
-# the idea is that this function takes output from the function that did combine and wll just make a results table
-load(filename)
+  load(filename)
   Phi<-cur_parameters$Phi
   p<-cur_parameters$p
   theta<-cur_parameters$theta
   RHat<-cur_parameters$RHat
-  #N_cc<-  length(which(apply(Rhat_cc, 1,max)<=RHat))
-  #N_ccc<-  length(which(apply(Rhat_ccc, 1,max)<=RHat))
   Converged_cc<-na.omit(which(apply(Rhat_cc, 1,max)<=RHat)[1:N_Models_to_use])
   Converged_ccc<-na.omit(which(apply(Rhat_ccc, 1,max)<=RHat))[1:N_Models_to_use]
   N_cc<-length(Converged_cc)
