@@ -17,7 +17,7 @@ Run_everything=FALSE # Change to TRUE if you want run all the models on your sid
 ### 0.2 Online or local data?
 This script can operate with online or local data. If `Use_local_data` set to TRUE working directory expected to have folder `data`. If `Run_everything` set to TRUE `results` directory will be created and all results will be saved there.
 ```{r}
-Use_local_data=FALSE # Change to TRUE if you want to use local data
+Use_local_data=FALSE # Change to TRUE if you want to use local data and to not download them from the GitHub page.
 ```
 
 ### 0.3 Checks and downloads 
@@ -33,18 +33,17 @@ if (Use_local_data) {
    if (!'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) stop('data directory not found!')
 } else {
    if (!'results' %in% list.dirs(full.names=FALSE, recursive=FALSE)) dir.create('results')
-   download.file('https://git.io/fjeUT', destfile='./results/Res_100_0.5_0.5.RDS', mode='wb')
-   download.file('https://git.io/fjeUk', destfile='./results/Res_100_0.5_0.9.RDS', mode='wb')
-   download.file('https://git.io/fjeUq', destfile='./results/Res_100_0.9_0.5.RDS', mode='wb')
-   download.file('https://git.io/fjeUO', destfile='./results/Res_100_0.9_0.9.RDS', mode='wb')
-   download.file('https://git.io/fjeUZ', destfile='./results/Res_90_0.5_0.5.RDS', mode='wb')
-   download.file('https://git.io/fjeUc', destfile='./results/Res_90_0.5_0.9.RDS', mode='wb')
-   download.file('https://git.io/fjeUC', destfile='./results/Res_90_0.9_0.5.RDS', mode='wb')
-   download.file('https://git.io/fjeUW', destfile='./results/Res_90_0.9_0.9.RDS', mode='wb')
-   download.file('https://git.io/fjeUR', destfile='./results/Res_95_0.5_0.5.RDS', mode='wb')
-   download.file('https://git.io/fjeUu', destfile='./results/Res_95_0.5_0.9.RDS', mode='wb')
-   download.file('https://git.io/fjeUz', destfile='./results/Res_95_0.9_0.5.RDS', mode='wb')
-   download.file('https://git.io/fjeUg', destfile='./results/Res_95_0.9_0.9.RDS', mode='wb')
+   # we will now download all the result files
+   Parameter_combos<-expand.grid(Phi=c(0.9, 0.5), p=c(0.9, 0.5, 0.3), Theta=c(1, 0.99, 0.95, 0.9))
+   Results_dir<-'https://github.com/eldarrak/CJS-with-misidentification/blob/master/results/'
+   for (i in 1:nrow(Parameter_combos)) {
+      Filename<-paste0('Sim_study_100_simulations_Phi_dot_', 
+        Parameter_combos$Phi[i], '_P_dot_', Parameter_combos$p[i], 
+        '_theta_dot_', Parameter_combos$Theta[i],
+	    '_n_occasions_25_marked_25_RHat1.01_.RData')
+      download.file(paste0(Results_dir, Filename, '?raw=true'),
+        destfile=paste0('./results/', Filename), mode='wb')
+   }
    download.file('https://git.io/fjeU2', destfile='./results/cjs.T.c.no_misr.RDS', mode='wb')
    download.file('https://git.io/fjeUV',
           destfile='./results/cjs.T.c.with.misidentification.RDS', mode='wb')
@@ -64,274 +63,524 @@ if (Use_local_data & !'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) 
 We need `R2jags` to run jags code. Note that to run the models you will also have to install jags software (Plummer 2011) from [here]( http://mcmc-jags.sourceforge.net).
 
 ```{r}
-library(R2jags)
+
+library('jagsUI')
 ```
 
 Now we source helper functions
 ```{r}
 # general functions
 source('https://git.io/fhhtZ')
-# wrapper for the analsyis of CJS and CJSm over a dataset
-source('https://git.io/fjeBQ') 
+
+# some locally used functions
+source('https://git.io/fjPgo')
 ```
 
 ## 1 Simulate and solve Phi_dot_P_dot_Theta_dot models
 For this exersice we simulate data with the function `simul.cjs.multiple.sightings` and then with the function `run_CJSm_c_c_c` estimate two cjs models over these data Phi_dot_P_dot model (CJS-c-c) and Phi_dot_P_dot_Theta_dot (cjsm-c-c-c)
 
-### 1.1 Define common parameters for all simulations
+### 1.1 Define wrapper function to run simulations and run the models output
+
+run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.limit=1.01, max.iter=150000, iter.increment2=10000) {
+  CH_input<-CH
+  if (run_naive) {
+    cat('running naive CJS-c-c model')
+    # flatten the data
+    CH<-apply(CH, c(1,2), sign)
+    # Create vector with occasion of marking
+    f <- apply(CH, 1, get.first)
+    Order<-(order(f))
+    CH<-CH[Order,]
+    f<-f[Order]
+    # Specify model in BUGS language
+    if (TRUE) {
+    sink("cjs-c-c.jags")
+    cat("
+    model {
+    # Priors and constraints
+    for (i in 1:nind){
+      for (t in f[i]:(n.occasions-1)){
+         phi[i,t] <- mean.phi
+         p[i,t] <- mean.p
+      } #t
+   } #i
+
+   mean.phi ~ dunif(0, 1)         # Prior for mean survival
+   mean.p ~ dunif(0, 1)           # Prior for mean recapture
+
+   # Likelihood 
+   for (i in 1:nind){
+      # Define latent state at first capture
+       z[i,f[i]] <- 1
+       for (t in (f[i]+1):n.occasions){
+          # State process
+          z[i,t] ~ dbern(mu1[i,t])
+          mu1[i,t] <- phi[i,t-1] * z[i,t-1]
+          # Observation process
+          y[i,t] ~ dbern(mu2[i,t])
+          mu2[i,t] <- p[i,t-1] * z[i,t]
+          } #t
+       } #i
+    }
+   ",fill = TRUE)
+   sink()
+   }
+   # Bundle data
+   jags.data <- list(y = CH, f = f, nind = dim(CH)[1], n.occasions = dim(CH)[2])
+
+   inits <- function(){list(mean.phi=runif(1,0,1), mean.p = runif(1,0,1), z = known.state.cjs(CH))}
+
+   # Parameters monitored
+   parameters <- c("mean.p", "mean.phi")
+
+   # Call JAGS from R 
+   cjs.c.c <- autojags(jags.data, inits, parameters, "cjs-c-c.jags", n.chains = 6, parallel=TRUE, n.cores=6,Rhat.limit=Rhat.limit, n.adapt=n.adapt, max.iter=max.iter, iter.increment=4000)
+   
+   cat('   Done!\n')
+  } # end of run_naive
+
+  if (run_CJSm) {
+  cat('running CJS-c-c-c model')
+  CH<-CH_input
+  # Create vector with occasion of marking
+  f <- apply(CH, 1, get.first)
+  Order<-(order(f))
+  CH<-CH[Order,]
+  f<-f[Order]
+  if (TRUE) {
+     # Specify model in BUGS language
+    sink("cjs-mult-c-c-c.jags")
+    cat("
+    model {
+
+    # Priors and constraints
+    for (i in 1:nind){
+       for (t in f[i]:(n.occasions-1)){
+          phi[i,t] <- mean.phi
+          p_r[i,t] <- mean.p
+       } #t
+    } #i
+    mean.phi ~ dunif(0, 1)         # Prior for mean survival
+    mean.p ~ dunif(0, 1)           # Prior for mean recapture
+    mean.theta ~ dunif(0,1)        # Prior for mean correct identification
+    for (t in 1:(n.occasions-1)) {
+    theta.t[t]<-mean.theta
+  }
+
+  for (t in 1:(n.occasions-1)) {
+      mu_wrong_assign[t] <-  N_reads[t] *(1-theta.t[t]) /
+                             (sum_N_marks_used[t]-1)
+  }
+
+   # Likelihood 
+   for (i in 1:nind){
+      # Define latent state at first capture
+      z[i,f[i]] <- 1
+       for (t in (f[i]+1):n.occasions){
+          # State process
+          z[i,t] ~ dbern(mu1[i,t])
+          mu1[i,t] <- phi[i,t-1] * z[i,t-1]
+          # Observation process
+    	  lambda_obs[i,t]<- -log(1-p_r[i,t-1])*z[i,t]*theta.t[t-1] + mu_wrong_assign[t-1]
+    	  y[i,t] ~ dpois(lambda_obs[i,t])
+        } #t
+    } #i
+  }
+  ",fill = TRUE)
+  sink()
+  }
+   sightings_and_fresh<-colSums(CH) # count per year
+   N_marked<-rle(apply(CH, 1, get.first))$lengths # marked per year
+   if (length(sightings_and_fresh)>length(N_marked)) N_marked<-c(N_marked, 0)
+
+   N_reads<-sightings_and_fresh-N_marked
+   N_reads<-N_reads[-1]
+
+   sum_N_marks_used<-cbind(cumsum(rle(apply(CH, 1, get.first))$lengths),
+                           rle(apply(CH, 1, get.first))$values)
+
+   sum_N_marks_used<-sum_N_marks_used[,1]
+
+   # Bundle data
+   jags.data <- list(y = CH, f = f, nind = dim(CH)[1],
+                     n.occasions = dim(CH)[2],
+					 sum_N_marks_used=sum_N_marks_used,
+					 N_reads=N_reads)
+
+   inits <- function(){list(z = known.state.cjs.mult(CH), 
+                            mean.phi = runif(1, 0, 1),
+                            mean.p = runif(1, 0, 1),
+                            mean.theta=runif(1, 0, 1))}
+
+   # Parameters monitored
+   parameters <- c("mean.phi" , "mean.p", "mean.theta")
+
+   # Call JAGS from R 
+   cjs.c.c.c <- autojags(jags.data, inits, parameters, "cjs-mult-c-c-c.jags", n.chains = 6, parallel=TRUE, n.cores=6,Rhat.limit=Rhat.limit, n.adapt=NULL, max.iter=max.iter, iter.increment= iter.increment2)
+   cat('   Done!\n')
+   }
+
+   Res<-list(cjs.c.c=cjs.c.c, cjs.c.c.c=cjs.c.c.c, CH=CH)
+   return(Res)
+}
+
+### 1.2 Define parameters for a sample simulation (Phi=0.9, P=0.9, theta=0.95)
 ```{r}
 n.occasions <- 25                   # Number of capture occasions
-marked <- rep(100, n.occasions-1)   # Annual number of newly marked individuals
-```
-### 1.2 Simulate ans solve for Phi=0.9, P=0.9
-#### Define values for Phi and P
-```{r}
-phi <- rep(0.9, n.occasions-1) # survival
-p <- rep(0.9, n.occasions-1)  # resighting
+marked <- rep(25, n.occasions-1) # Annual number of newly marked individuals
+
+Phi_dot=0.9
+P_dot=0.3
+theta_dot=0.95
+RHat_limit=1.01
+max.iter=160000
+n.adapt=5000
+iter.increment2=20000
+nRuns=100
+n.occasions <-25  
+
+phi <- rep(Phi_dot, n.occasions-1) # survival
+p <- rep(P_dot, n.occasions-1)  # resighting
 # Define matrices with survival recapture and correct identification
 PHI <- matrix(phi, ncol = n.occasions-1, nrow = sum(marked))
 P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
-```
 
-#### Define values for Theta and simulate
-
-90% correct identification
-```{r}
-theta<- rep(0.90, n.occasions-1) # correctly identified
+theta<- rep(theta_dot, n.occasions-1) # correctly identified
 THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
-```
-95% correct identification 
-
-Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
-
-```{r}
-theta<- rep(0.95, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
-                                      marked=marked)
 ```
 
-100% correct identification
+### 1.3 Run loop for 100 simulations
+Note, the lopp below will try to run 200 models! and it will take time (days). 
 
-Here we use the orignal simulated dataset `CH_90$CH_no_misr`
-```{r}
-CH_100<-CH_90$CH_no_misr
 ```
-#### Estimate models
-We now will solve these three cases (or load the preestimated results).
-```{r}
 if (Run_everything) {
-   # (BRT ~ 15 min)
-   Res_90<-run_CJSm_c_c_c(CH_90$CH)
-   saveRDS(Res_90, file='./results/Res_90_0.9_0.9.RDS')
+for (i in 1:nRuns) {
+   cat('i = ', i, '\n')
+   CH <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
+   Res_list<-run_CJSm_c_c_c(CH$CH, Rhat.limit=RHat_limit, max.iter=max.iter, iter.increment2=iter.increment2, n.adapt=n.adapt)
+   Mean.c.c.c<-rbind(Mean.c.c.c,c('mean.phi'=Res_list$cjs.c.c.c$mean$mean.phi, 'mean.p'=Res_list$cjs.c.c.c$mean$mean.p, 'mean.theta'=Res_list$cjs.c.c.c$mean$mean.theta, 'deviance'=Res_list$cjs.c.c.c$mean$deviance)) # this is enough for bias.
+   Mean.c.c<-rbind(Mean.c.c,c('mean.phi'=Res_list$cjs.c.c$mean$mean.phi, 'mean.p'=Res_list$cjs.c.c$mean$mean.p, 'deviance'=Res_list$cjs.c.c$mean$deviance)) # this is enough for bias.
 
-   # (BRT ~ 20 min)
-   Res_95<-run_CJSm_c_c_c(CH_95$CH, ni=4000, nb=2500)
-   saveRDS(Res_95, file='./results/Res_95_0.9_0.9.RDS')
+   # for coverage we need
+   ccc_CI_cur<-cbind(c('mean.phi'=phi[1], 'mean.p'=p[1], 
+                    'mean.theta'=theta[1]), 
+                  c(Res_list$cjs.c.c.c$q2.5$mean.phi, 
+				    Res_list$cjs.c.c.c$q2.5$mean.p,
+					Res_list$cjs.c.c.c$q2.5$mean.theta), 
+				  c(Res_list$cjs.c.c.c$q97.5$mean.phi, 
+				    Res_list$cjs.c.c.c$q97.5$mean.p,
+					Res_list$cjs.c.c.c$q97.5$mean.theta))
 
-   # (BRT ~ 25 min)
-   Res_100<-run_CJSm_c_c_c(CH_100, ni=5000, nb=3500)
-   saveRDS(Res_100, file='./results/Res_100_0.9_0.9.RDS')
-Sys.time()-a
-   
+   cc_CI_cur<-cbind(c('mean.phi'=phi[1], 'mean.p'=p[1]), 
+                  c(Res_list$cjs.c.c$q2.5$mean.phi, 
+				    Res_list$cjs.c.c$q2.5$mean.p), 
+				  c(Res_list$cjs.c.c$q97.5$mean.phi, 
+				    Res_list$cjs.c.c$q97.5$mean.p))
+
+   Cov.c.c.c<-rbind(Cov.c.c.c,apply(ccc_CI_cur, 1, FUN=function(x) x[[1]]>=x[[2]] & x[[1]]<=x[[3]]))
+   Cov.c.c<-rbind(Cov.c.c,apply(cc_CI_cur, 1, FUN=function(x) x[[1]]>=x[[2]] & x[[1]]<=x[[3]]))
+
+   ccc_CI_width<-rbind(ccc_CI_width, apply(ccc_CI_cur, 1, FUN=function(x) x[[3]]- x[[2]]))
+   cc_CI_width<-rbind(cc_CI_width, apply(cc_CI_cur, 1, FUN=function(x) x[[3]]- x[[2]]))
+
+   N_eff_ccc<-rbind(N_eff_ccc, unlist(Res_list$cjs.c.c.c$n.eff))
+   Rhat_ccc<-rbind(Rhat_ccc, unlist(Res_list$cjs.c.c.c$Rhat))
+
+   N_eff_cc<-rbind(N_eff_cc, unlist(Res_list$cjs.c.c$n.eff))
+   Rhat_cc<-rbind(Rhat_cc, unlist(Res_list$cjs.c.c$Rhat))
+
+   MCMCInfo_ccc<-rbind(MCMCInfo_ccc, 
+      c('n.chains'=Res_list$cjs.c.c.c$mcmc.info$n.chains,
+        'n.burnin'=Res_list$cjs.c.c.c$mcmc.info$n.burnin,
+        'n.iter'=Res_list$cjs.c.c.c$mcmc.info$n.iter,
+        'elapsed.mins'=Res_list$cjs.c.c.c$mcmc.info$elapsed.mins))
+
+   MCMCInfo_cc<-rbind(MCMCInfo_cc, 
+       c('n.chains'=Res_list$cjs.c.c$mcmc.info$n.chains,
+         'n.burnin'=Res_list$cjs.c.c$mcmc.info$n.burnin,
+         'n.iter'=Res_list$cjs.c.c$mcmc.info$n.iter,
+         'elapsed.mins'=Res_list$cjs.c.c$mcmc.info$elapsed.mins))
+   #######
+   # once in e.g. 10 runs we will save the result..
+   if (i%%10 ==0) { 
+     save(Mean.c.c.c, Mean.c.c, Cov.c.c.c, Cov.c.c, 
+        ccc_CI_width, cc_CI_width, 
+	    N_eff_ccc, N_eff_cc, 
+		Rhat_ccc, Rhat_cc, 
+		MCMCInfo_ccc, MCMCInfo_cc,
+		file=paste0('LBurnin_Phi_dot_', Phi_dot, '_P_dot_', P_dot, 
+            '_theta_dot_', theta_dot, '_n_occasions_', n.occasions, 
+	        '_marked_', marked[1], '_iteration_', i, '_RHat_', RHat_limit, '.Rdata'))
+    }
+   }
+			 
+   N_ccc<-  length(which(apply(Rhat_ccc, 1,max)<=RHat_limit))
+
+   cur_parameters<-list(Phi=Phi, p=p, theta=theta, RHat=RHat_limit, N_ccc=N_ccc)
+
+   Filename<-paste0('Sim_study_100_simulations_Phi_dot_', 
+      Phi, '_P_dot_', p, 
+      '_theta_dot_', theta,
+	  '_n_occasions_25_marked_25_RHat1.01_.RData')	
+	  
+   save(cur_parameters,
+     cc_CI_width,  ccc_CI_width, 
+     Cov.c.c, Cov.c.c.c, 
+     MCMCInfo_cc, MCMCInfo_ccc, 
+	 Mean.c.c, Mean.c.c.c,
+	 N_eff_cc, N_eff_ccc,
+	 Rhat_cc, Rhat_ccc,
+	 file=Filename)
+ 
 }
-Res_90<-readRDS('./results/Res_90_0.9_0.9.RDS')
-Res_95<-readRDS('./results/Res_95_0.9_0.9.RDS')
-Res_100<-readRDS('./results/Res_100_0.9_0.9.RDS')
-
-print(Res_90$cjs.c.c, digits = 3)
-print(Res_90$cjs.c.c.c, digits = 3)
-print(Res_95$cjs.c.c, digits = 3)
-print(Res_95$cjs.c.c.c, digits = 3)
-print(Res_100$cjs.c.c, digits = 3)
-print(Res_100$cjs.c.c.c, digits = 3)
 ```
 
-### 1.3 Simulate ans solve for Phi=0.5, P=0.5
-#### Define values for Phi and P
+## 1.4 Combine simulation results
 ```{r}
-phi <- rep(0.5, n.occasions-1) # survival
-p <- rep(0.5, n.occasions-1)  # resighting
-# Define matrices with survival recapture and correct identification
-PHI <- matrix(phi, ncol = n.occasions-1, nrow = sum(marked))
-P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
-```
-
-#### Define values for Theta and simulate
-
-90% correct identification
-```{r}
-theta<- rep(0.90, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
-```
-95% correct identification 
-
-Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
-
-```{r}
-theta<- rep(0.95, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
-                                      marked=marked)
-```
-
-100% correct identification
-
-Here we use the orignal simulated dataset `CH_90$CH_no_misr`
-```{r}
-CH_100<-CH_90$CH_no_misr
-```
-#### Estimate models
-We now will solve these three cases (or load the preestimated results).
-```{r}
-if (Run_everything) {
-   # (BRT ~ 15 min)
-   Res_90<-run_CJSm_c_c_c(CH_90$CH)
-   saveRDS(Res_90, file='./results/Res_90_0.5_0.5.RDS')
-
-   # (BRT ~ 20 min)
-   Res_95<-run_CJSm_c_c_c(CH_95$CH, ni=4000, nb=2500)
-   saveRDS(Res_95, file='./results/Res_95_0.5_0.5.RDS')
-
-   # (BRT ~ 25 min)
-   Res_100<-run_CJSm_c_c_c(CH_100, ni=5000, nb=3500)
-   saveRDS(Res_100, file='./results/Res_100_0.5_0.5.RDS')
+C_Files<-list.files(path='./results/', 
+                    pattern='Sim_study_100_simulations', 
+					recursive=TRUE,full.names=TRUE)
+Res<-c()
+for (i in 1:length(C_Files)) {
+   Res<-rbind(Res, make_two_cells(C_Files[i]))
 }
-Res_90<-readRDS('./results/Res_90_0.5_0.5.RDS')
-Res_95<-readRDS('./results/Res_95_0.5_0.5.RDS')
-Res_100<-readRDS('./results/Res_100_0.5_0.5.RDS')
-print(Res_90$cjs.c.c, digits = 3)
-print(Res_90$cjs.c.c.c, digits = 3)
-print(Res_95$cjs.c.c, digits = 3)
-print(Res_95$cjs.c.c.c, digits = 3)
-print(Res_100$cjs.c.c, digits = 3)
-print(Res_100$cjs.c.c.c, digits = 3)
+
+print(Res, digits=3)
 ```
-### 1.4 Simulate ans solve for Phi=0.9, P=0.5
-#### Define values for Phi and P
+## 1.5 Make Figure 3
+
+First we prepare indices for colors, color intencity and jitter.
 ```{r}
-phi <- rep(0.9, n.occasions-1) # survival
-p <- rep(0.5, n.occasions-1)  # resighting
-# Define matrices with survival recapture and correct identification
-PHI <- matrix(phi, ncol = n.occasions-1, nrow = sum(marked))
-P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
+Res$pchtype<-1
+Res$pchtype[Res$Phi==0.5]<-2
+
+Res$colintensity<-NA
+Res$colintensity[Res$p==0.3]<-1
+Res$colintensity[Res$p==0.5]<-2
+Res$colintensity[Res$p==0.9]<-3
+
+Res$X<-NA
+Res$X[Res$theta==1]<-1
+Res$X[Res$theta==0.99]<-2
+Res$X[Res$theta==0.95]<-3
+Res$X[Res$theta==0.9]<-4
+
+# this order is needed to shift points to the left and to the right..
+Res$X.order<-NA
+Res$X.order[Res$Phi==0.9 & Res$p==0.9 & Res$type=='naive']<-1
+Res$X.order[Res$Phi==0.9 & Res$p==0.9 & Res$type=='CJSm']<-2
+
+Res$X.order[Res$Phi==0.9 & Res$p==0.5 & Res$type=='naive']<-3
+Res$X.order[Res$Phi==0.9 & Res$p==0.5 & Res$type=='CJSm']<-4
+
+Res$X.order[Res$Phi==0.9 & Res$p==0.3 & Res$type=='naive']<-5
+Res$X.order[Res$Phi==0.9 & Res$p==0.3 & Res$type=='CJSm']<-6
+
+Res$X.order[Res$Phi==0.5 & Res$p==0.9 & Res$type=='naive']<-7
+Res$X.order[Res$Phi==0.5 & Res$p==0.9 & Res$type=='CJSm']<-8
+
+Res$X.order[Res$Phi==0.5 & Res$p==0.5 & Res$type=='naive']<-9
+Res$X.order[Res$Phi==0.5 & Res$p==0.5 & Res$type=='CJSm']<-10
+
+Res$X.order[Res$Phi==0.5 & Res$p==0.3 & Res$type=='naive']<-11
+Res$X.order[Res$Phi==0.5 & Res$p==0.3 & Res$type=='CJSm']<-12
 ```
-
-#### Define values for Theta and simulate
-
-90% correct identification
+Now plotting the figure:
 ```{r}
-theta<- rep(0.90, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
-```
-95% correct identification 
+line_col=grey(0.5)
+linelty=2
+par(mar=c(3,3,2,1))
+par(mfrow=c(2,3))
+orange.colors<-colorRampPalette(c('white', '#D95F02') )
 
-Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
+##################################
+### Panel A
+##### Phi bias
+plot(x=c(0.5,4.5), y=c(-0.1, 0.5),
+     xaxs='i', type='n', axes=F,
+	 xlab='Theta', ylab='Phi bias')
 
-```{r}
-theta<- rep(0.95, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
-                                      marked=marked)
-```
-100% correct identification
+axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
+axis(2, las=1)
+abline(h=seq(-0.4, 0.4, by=0.2), col=line_col, lty=linelty)
+abline(v=c(1.5, 2.5, 3.5), col=line_col, lty=linelty)
+abline(h=0, lwd=1, col='red')
+box()
 
-Here we use the orignal simulated dataset `CH_90$CH_no_misr`
-```{r}
-CH_100<-CH_90$CH_no_misr
-```
-#### Estimate models
-We now will solve these three cases (or load the preestimated results).
-```{r}
-if (Run_everything) {
-   # (BRT ~ 15 min)
-   Res_90<-run_CJSm_c_c_c(CH_90$CH)
-   saveRDS(Res_90, file='./results/Res_90_0.9_0.5.RDS')
-
-   # (BRT ~ 20 min)
-   Res_95<-run_CJSm_c_c_c(CH_95$CH, ni=4000, nb=2500)
-   saveRDS(Res_95, file='./results/Res_95_0.9_0.5.RDS')
-   
-   # (BRT ~ 25 min)
-   Res_100<-run_CJSm_c_c_c(CH_100, ni=5000, nb=3500)
-   saveRDS(Res_100, file='./results/Res_100_0.9_0.5.RDS')
+sets4lines<-unique(subset(Res, select=c('Phi', 'p', 'type')))
+for (i in 1:nrow(sets4lines)) {
+   Cur_data<-Res[Res$Phi==sets4lines$Phi[i] 
+                 & Res$p==sets4lines$p[i]
+				 & Res$type==sets4lines$type[i],]
+   Cur_data<-Cur_data[order(Cur_data$theta),]
+   lines(Phi.bias ~ I(X + (X.order-6.5)/14), data=Cur_data,
+         pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive',
+         orange.colors(4)[colintensity+1],
+		 rev(grey.colors(4))[colintensity+1]))
 }
-Res_90<-readRDS('./results/Res_90_0.9_0.5.RDS')
-Res_95<-readRDS('./results/Res_95_0.9_0.5.RDS')
-Res_100<-readRDS('./results/Res_100_0.9_0.5.RDS')
 
-print(Res_90$cjs.c.c, digits = 3)
-print(Res_90$cjs.c.c.c, digits = 3)
-print(Res_95$cjs.c.c, digits = 3)
-print(Res_95$cjs.c.c.c, digits = 3)
-print(Res_100$cjs.c.c, digits = 3)
-print(Res_100$cjs.c.c.c, digits = 3)
-```
+points(Phi.bias~ I(X + (X.order-6.5)/14), data=Res, 
+       pch=ifelse(pchtype==1, 15, 17), 
+	   col=ifelse(type=='naive', orange.colors(4)[colintensity+1],
+	   rev(grey.colors(4))[colintensity+1]))
 
-### 1.5 Simulate ans solve for Phi=0.5, P=0.9
-#### Define values for Phi and P
-```{r}
-phi <- rep(0.5, n.occasions-1) # survival
-p <- rep(0.9, n.occasions-1)  # resighting
-# Define matrices with survival recapture and correct identification
-PHI <- matrix(phi, ncol = n.occasions-1, nrow = sum(marked))
-P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
-```
+##################################
+### Panel B
+##### p bias
+plot(x=c(0.5,4.5), y=range(Res$p.bias),
+     xaxs='i', type='n', axes=F,
+	 xlab='Theta', ylab='p bias')
 
-#### Define values for Theta and simulate
+axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
+axis(2, las=1)
+abline(h=seq(-0.4, 0.4, by=0.2), col=line_col, lty=linelty)
+abline(v=c(1.5, 2.5, 3.5), col=line_col, lty=linelty)
+abline(h=0, lwd=1, col='red')
+box()
+sets4lines<-unique(subset(Res, select=c('Phi', 'p', 'type')))
 
-90% correct identification
-```{r}
-theta<- rep(0.90, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_90 <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
-```
-95% correct identification 
-
-Note, that function simul.cjs.multiple.sightings returns both simulated dataset with misidentification `CH_90$CH` and without misidentification `CH_90$CH_no_misr`. We will use the latter to simulate 95% of misidentification probability.
-
-```{r}
-theta<- rep(0.95, n.occasions-1) # correctly identified
-THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
-CH_95 <- simul.cjs.multiple.sightings(CH=CH_90$CH_no_misr, THETA=THETA,
-                                      marked=marked)
-```
-
-100% correct identification
-
-Here we use the orignal simulated dataset `CH_90$CH_no_misr`
-```{r}
-CH_100<-CH_90$CH_no_misr
-```
-#### Estimate models
-We now will solve these three cases (or load the preestimated results).
-```{r}
-if (Run_everything) {
-   # (BRT ~ 15 min)
-   Res_90<-run_CJSm_c_c_c(CH_90$CH)
-   saveRDS(Res_90, file='./results/Res_90_0.5_0.9.RDS')
-
-   # (BRT ~ 20 min)
-   Res_95<-run_CJSm_c_c_c(CH_95$CH, ni=4000, nb=2500)
-   saveRDS(Res_95, file='./results/Res_95_0.5_0.9.RDS')
-
-   # (BRT ~ 25 min)
-   Res_100<-run_CJSm_c_c_c(CH_100, ni=5000, nb=3500)
-   saveRDS(Res_100, file='./results/Res_100_0.5_0.9.RDS')
+for (i in 1:nrow(sets4lines)) {
+   Cur_data<-Res[Res$Phi==sets4lines$Phi[i]
+                & Res$p==sets4lines$p[i] 
+				& Res$type==sets4lines$type[i],]
+   Cur_data<-Cur_data[order(Cur_data$theta),]
+   lines(p.bias ~ I(X + (X.order-6.5)/14), data=Cur_data,
+         pch=ifelse(pchtype==1, 15, 17), 
+		 col=ifelse(type=='naive', orange.colors(4)[colintensity+1],
+		 rev(grey.colors(4))[colintensity+1]))
 }
-Res_90<-readRDS('./results/Res_90_0.5_0.9.RDS')
-Res_95<-readRDS('./results/Res_95_0.5_0.9.RDS')
-Res_100<-readRDS('./results/Res_100_0.5_0.9.RDS')
 
-print(Res_90$cjs.c.c, digits = 3)
-print(Res_90$cjs.c.c.c, digits = 3)
-print(Res_95$cjs.c.c, digits = 3)
-print(Res_95$cjs.c.c.c, digits = 3)
-print(Res_100$cjs.c.c, digits = 3)
-print(Res_100$cjs.c.c.c, digits = 3)
+points(p.bias~ I(X + (X.order-6.5)/14), data=Res, 
+       pch=ifelse(pchtype==1, 15, 17), 
+	   col=ifelse(type=='naive', orange.colors(4)[colintensity+1],
+	   rev(grey.colors(4))[colintensity+1]))
+
+##################################
+### Panel C
+##### theta bias
+plot(x=c(0.5,4.5), y=range(-0.3, 0.3), 
+     xaxs='i',, type='n', axes=F, 
+	 xlab='Theta', ylab='theta bias')
+
+axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
+axis(2, las=1)
+abline(v=c(1.5, 2.5, 3.5),, col=line_col, lty=linelty)
+abline(h=seq(-0.4, 0.4, by=0.2), col=line_col, lty=linelty)
+abline(h=0, lwd=1, col='red')
+box()
+
+sets4lines<-unique(subset(Res, select=c('Phi', 'p', 'type')))
+for (i in 1:nrow(sets4lines)) {
+    Cur_data<-Res[Res$Phi==sets4lines$Phi[i]
+               	  & Res$p==sets4lines$p[i]
+	              & Res$type==sets4lines$type[i],]
+    Cur_data<-Cur_data[order(Cur_data$theta),]
+
+    lines(theta.bias ~ I(X + (X.order-6.5)/14), data=Cur_data,
+          pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive', 
+		  orange.colors(4)[colintensity+1],
+		  rev(grey.colors(4))[colintensity+1]))
+}
+
+points(theta.bias~ I(X + (X.order-6.5)/14), data=Res, 
+       pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive',
+	   orange.colors(4)[colintensity+1],
+	   rev(grey.colors(4))[colintensity+1]))
+
+##########################################
+##########################################
+# the second set of panels - coverage
+
+##################################
+### Panel D
+##### Phi coverage
+plot(x=c(0.5,4.5), y=c(0,1), axs='i', xaxs='i',
+     type='n', axes=F, xlab='Theta', ylab='Phi 95 CI coverage')
+
+axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
+axis(2, las=1)
+abline(h=0.95, lwd=1, col='red')
+abline(v=c(1.5, 2.5, 3.5), col=line_col, lty=linelty)
+abline(h=c(0, 0.25, 0.5, 0.75, 1), col=line_col, lty=linelty)
+box()
+
+sets4lines<-unique(subset(Res, select=c('Phi', 'p', 'type')))
+for (i in 1:nrow(sets4lines)) {
+   Cur_data<-Res[Res$Phi==sets4lines$Phi[i] 
+                & Res$p==sets4lines$p[i] 
+                & Res$type==sets4lines$type[i],]
+   Cur_data<-Cur_data[order(Cur_data$theta),]
+
+   lines(Phi.CI.coverage~ I(X + (X.order-6.5)/14), data=Cur_data,
+         pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive', 
+		 orange.colors(4)[colintensity+1],
+		 rev(grey.colors(4))[colintensity+1]))
+}
+
+points(Phi.CI.coverage~ I(X + (X.order-6.5)/14), data=Res, 
+       pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive', 
+	   orange.colors(4)[colintensity+1],
+	   rev(grey.colors(4))[colintensity+1]))
+
+##################################
+### Panel E
+##### p coverage
+plot(x=c(0.5,4.5), y=c(0,1), axs='i', type='n', axes=F, xlab='Theta', ylab='p 95 CI coverage')
+
+axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
+axis(2, las=1)
+abline(h=0.95, lwd=1, col='red')
+abline(v=c(1.5, 2.5, 3.5), col=line_col, lty=linelty)
+abline(h=c(0, 0.25, 0.5, 0.75, 1), col=line_col, lty=linelty)
+box()
+
+sets4lines<-unique(subset(Res, select=c('Phi', 'p', 'type')))
+for (i in 1:nrow(sets4lines)) {
+    Cur_data<-Res[Res$Phi==sets4lines$Phi[i]
+   	& Res$p==sets4lines$p[i] 
+	& Res$type==sets4lines$type[i],]
+    Cur_data<-Cur_data[order(Cur_data$theta),]
+    lines(p.CI.coverage~ I(X + (X.order-6.5)/14), data=Cur_data,
+          pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive', 
+		  orange.colors(4)[colintensity+1],
+		  rev(grey.colors(4))[colintensity+1]))
+}
+
+points(p.CI.coverage~ I(X + (X.order-6.5)/14), data=Res, 
+       pch=ifelse(pchtype==1, 15, 17), col=ifelse(type=='naive',
+	   orange.colors(4)[colintensity+1],
+	   rev(grey.colors(4))[colintensity+1]))
+
+##################################
+### Panel F
+##### theta coverage
+plot(x=c(0.5,4.5), y=c(0,1), axs='i', type='n', 
+     axes=F, xlab='Theta', ylab='theta 95 CI coverage')
+
+axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
+axis(2, las=1)
+abline(h=0.95, lwd=1, col='red')
+abline(v=c(1.5, 2.5, 3.5), col=line_col, lty=linelty)
+abline(h=c(0, 0.25, 0.5, 0.75, 1), col=line_col, lty=linelty)
+box()
+Res_c<-Res[Res$theta<1,]
+
+sets4lines<-unique(subset(Res_c, select=c('Phi', 'p', 'type')))
+for (i in 1:nrow(sets4lines)) {
+    Cur_data<-Res_c[Res_c$Phi==sets4lines$Phi[i] 
+	& Res_c$p==sets4lines$p[i] 
+	& Res_c$type==sets4lines$type[i],]
+    Cur_data<-Cur_data[order(Cur_data$theta),]
+    lines(theta.CI.coverage~ I(X + (X.order-6.5)/14), data=Cur_data,
+          pch=ifelse(pchtype==1, 15, 17), 
+		  col=ifelse(type=='naive', orange.colors(4)[colintensity+1],
+		  rev(grey.colors(4))[colintensity+1]))
+}
+
+points(theta.CI.coverage~ I(X + (X.order-6.5)/14), data=Res_c, 
+       pch=ifelse(pchtype==1, 15, 17), 
+	   col=ifelse(type=='naive', orange.colors(4)[colintensity+1],
+	   rev(grey.colors(4))[colintensity+1]))
 ```
 
 ## 2. Estimation of trend in survival probability over time
@@ -422,6 +671,12 @@ ni <- 5000
 nt <- 6
 nb <- 2500
 nc <- 5
+
+detach('package:jagsUI', unload=TRUE) 
+# we used this package for the first set of simulations
+# It is safer to detach it before uploading R2jags
+library(R2jags)
+
 if (Run_everything) {
 # Call JAGS from R (BRT ~ 21 min)
 cjs.T.c.with.misidentification <- jags.parallel(jags.data, inits,
