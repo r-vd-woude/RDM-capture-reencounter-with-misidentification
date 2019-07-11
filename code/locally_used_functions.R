@@ -1,150 +1,104 @@
 ######################################
-# This file contains function that runns naive CJS and CJS with constant over time parameters over the given data.
+# This file contains a simple function to combine simulation results.
 
 withAutoprint({
-cat('sourcing run_CJSm_c_c_c()') 
+cat('sourcing make_two_cells()') 
 
-run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, ni=3000, nb=1500) {
-  CH_input<-CH
-  if (run_naive) {
-    cat('running naive CJS-c-c model')
-    # flatten the data
-    CH<-apply(CH, c(1,2), sign)
-    # Create vector with occasion of marking
-    f <- apply(CH, 1, get.first)
-    Order<-(order(f))
-    CH<-CH[Order,]
-    f<-f[Order]
-# Specify model in BUGS language
-sink("cjs-c-c.jags")
-cat("
-model {
+make_two_cells<-function(filename=NULL, N_Models_to_use=100) {
+# the idea is that this function takes output from the function that did combine and wll just make a results table
+load(filename)
+  Phi<-cur_parameters$Phi
+  p<-cur_parameters$p
+  theta<-cur_parameters$theta
+  RHat<-cur_parameters$RHat
+  #N_cc<-  length(which(apply(Rhat_cc, 1,max)<=RHat))
+  #N_ccc<-  length(which(apply(Rhat_ccc, 1,max)<=RHat))
+  Converged_cc<-na.omit(which(apply(Rhat_cc, 1,max)<=RHat)[1:N_Models_to_use])
+  Converged_ccc<-na.omit(which(apply(Rhat_ccc, 1,max)<=RHat))[1:N_Models_to_use]
+  N_cc<-length(Converged_cc)
+  N_ccc<-length(Converged_ccc)
+  Res<-c()
 
-# Priors and constraints
-for (i in 1:nind){
-   for (t in f[i]:(n.occasions-1)){
-      phi[i,t] <- mean.phi
-      p[i,t] <- mean.p
-      } #t
-   } #i
+  if (length(Converged_cc>1)) {
+  Mean.c.c<-as.data.frame(Mean.c.c)
+  cc_CI_width<-as.data.frame(cc_CI_width)
+  Means_cc<-colMeans(Mean.c.c[Converged_cc,])
+  Res_cc<-data.frame(
+     'type'='naive',
+     'Phi'=Phi,
+	 'p'=p,
+	 'theta'=theta,
+	 'RHat'=RHat,
+	 'Phi.mean'=Means_cc[1],
+	 'Phi.lci'=	 quantile(Mean.c.c$mean.phi[Converged_cc], 0.025),
+	 'Phi.uci'=	 quantile(Mean.c.c$mean.phi[Converged_cc], 0.975),
+	 'Phi.bias'=  (Means_cc[1]-Phi),
+	 'Phi.sc.MSE'=  sum((Mean.c.c$mean.phi[Converged_cc]-Phi)^2)/((N_cc-1)*Phi^2),
+	 'Phi.CI.width'= mean(cc_CI_width$mean.phi[Converged_cc]),
+	 'Phi.CI.coverage'= sum(Cov.c.c[Converged_cc,1])/N_cc,
+     'Phi.mean.n.eff'=mean(N_eff_cc[Converged_cc,1]),
+	 'p.mean'=Means_cc[2],
+	 'p.lci'=	 quantile(Mean.c.c$mean.p[Converged_cc], 0.025),
+	 'p.uci'=	 quantile(Mean.c.c$mean.p[Converged_cc], 0.975),
+	 'p.bias'=  (Means_cc[2]-p),
+	 'p.sc.MSE'=  sum((Mean.c.c$mean.p[Converged_cc]-p)^2)/((N_cc-1)*p^2),
+	 'p.CI.width'= mean(cc_CI_width$mean.p[Converged_cc]),
+	 'p.CI.coverage'= sum(Cov.c.c[Converged_cc,2])/N_cc,
+     'p.mean.n.eff'=mean(N_eff_cc[Converged_cc,2]),
+	 'theta.mean'=NA,
+	 'theta.lci'=	 NA,
+	 'theta.uci'=	 NA,
+	 'theta.bias'=  NA,
+	 'theta.sc.MSE'=  NA,
+	 'theta.CI.width'= NA,
+	 'theta.CI.coverage'= NA,
+     'theta.mean.n.eff'=NA,
+	 'N_models'=N_cc
 
-mean.phi ~ dunif(0, 1)         # Prior for mean survival
-mean.p ~ dunif(0, 1)           # Prior for mean recapture
+	)
+  Res<-rbind(Res, Res_cc)
+  }
+  if (length(Converged_ccc>1)) {
+  Mean.c.c.c<-as.data.frame(Mean.c.c.c)
+  ccc_CI_width<-as.data.frame(ccc_CI_width)
+  Means_ccc<-colMeans(Mean.c.c.c[Converged_ccc,])
 
-# Likelihood 
-for (i in 1:nind){
-   # Define latent state at first capture
-   z[i,f[i]] <- 1
-   for (t in (f[i]+1):n.occasions){
-      # State process
-      z[i,t] ~ dbern(mu1[i,t])
-      mu1[i,t] <- phi[i,t-1] * z[i,t-1]
-      # Observation process
-      y[i,t] ~ dbern(mu2[i,t])
-      mu2[i,t] <- p[i,t-1] * z[i,t]
-      } #t
-   } #i
-}
-",fill = TRUE)
-sink()
+  Res_ccc<-data.frame(
+     'type'='CJSm',
+     'Phi'=Phi,
+	 'p'=p,
+	 'theta'=theta,
+	 'RHat'=RHat,
+	 'Phi.mean'=Means_ccc[1],
+	 'Phi.lci'=	 quantile(Mean.c.c.c$mean.phi[Converged_ccc], 0.025),
+	 'Phi.uci'=	 quantile(Mean.c.c.c$mean.phi[Converged_ccc], 0.975),
+	 'Phi.bias'=  (Means_ccc[1]-Phi),
+	 'Phi.sc.MSE'=  sum((Mean.c.c.c$mean.phi[Converged_ccc]-Phi)^2)/((N_ccc-1)*Phi^2),
+	 'Phi.CI.width'= mean(ccc_CI_width$mean.phi[Converged_ccc]),
+	 'Phi.CI.coverage'= sum(Cov.c.c.c[Converged_ccc,1])/N_ccc,
+     'Phi.mean.n.eff'=mean(N_eff_ccc[Converged_ccc,1]),
+	 'p.mean'=Means_ccc[2],
+	 'p.lci'=	 quantile(Mean.c.c.c$mean.p[Converged_ccc], 0.025),
+	 'p.uci'=	 quantile(Mean.c.c.c$mean.p[Converged_ccc], 0.975),
+	 'p.bias'=  (Means_ccc[2]-p),
+	 'p.sc.MSE'=  sum((Mean.c.c.c$mean.p[Converged_ccc]-p)^2)/((N_ccc-1)*p^2),
+	 'p.CI.width'= mean(ccc_CI_width$mean.p[Converged_ccc]),
+	 'p.CI.coverage'= sum(Cov.c.c.c[Converged_ccc,2])/N_ccc,
+     'p.mean.n.eff'=mean(N_eff_ccc[Converged_ccc,2]),
+     'theta.mean'=Means_ccc[3],
+	 'theta.lci'= quantile(Mean.c.c.c$mean.theta[Converged_ccc], 0.025),
+	 'theta.uci'= quantile(Mean.c.c.c$mean.theta[Converged_ccc], 0.975),
+	 'theta.bias'= (Means_ccc[3]-theta),
+	 'theta.sc.MSE'=  sum((Mean.c.c.c$mean.theta[Converged_ccc]-theta)^2)/((N_ccc-1)*theta^2),
+	 'theta.CI.width'= mean(ccc_CI_width$mean.theta[Converged_ccc]),
+	 'theta.CI.coverage'= sum(Cov.c.c.c[Converged_ccc,3])/N_ccc,
+     'theta.mean.n.eff'=mean(N_eff_ccc[Converged_ccc,3]),
+	 'N_models'=N_ccc
+	)
+   Res<-rbind(Res, Res_ccc)
+  }
+  return(Res)  
+  }
 
-# Bundle data
-jags.data <- list(y = CH, f = f, nind = dim(CH)[1], n.occasions = dim(CH)[2])
-
-inits <- function(){list(mean.phi=runif(1,0,1), mean.p = runif(1,0,1), z = known.state.cjs(CH))}
-
-# Parameters monitored
-parameters <- c("mean.p", "mean.phi")
-
-# MCMC settings
-nt <- 6
-nc <- 5
-
-# Call JAGS from R (BRT 1 min)
-cjs.c.c <- jags.parallel(jags.data, inits, parameters, "cjs-c-c.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, , export_obj_names=c('cjs.init.z', 'known.state.cjs', 'nb', 'ni', 'nt', 'CH', 'f'), envir=environment())
-
-cat('   Done!\n')
-  } # end of run_naive
-
-  if (run_CJSm) {
-  cat('running CJS-c-c-c model')
-  CH<-CH_input
-  # Create vector with occasion of marking
-  f <- apply(CH, 1, get.first)
-  Order<-(order(f))
-  CH<-CH[Order,]
-  f<-f[Order]
-
-# Specify model in BUGS language
-sink("cjs-mult-c-c-c.jags")
-cat("
-model {
-
-# Priors and constraints
-for (i in 1:nind){
-   for (t in f[i]:(n.occasions-1)){
-      phi[i,t] <- mean.phi
-      p_r[i,t] <- mean.p
-	  theta[i,t] <- theta.t[t]
-
-      } #t
-   } #i
-mean.phi ~ dunif(0, 1)         # Prior for mean survival
-mean.p ~ dunif(0, 1)           # Prior for mean recapture
-mean.theta ~ dunif(0,1)        # Prior for mean correct identification
-for (t in 1:(n.occasions-1)) {
-   theta.t[t]<-mean.theta
-}
-
-for (t in 1:(n.occasions-1)) {
-   mu_wrong_assign[t] <-  N_reads[t] *(1-theta.t[t]) / sum_N_marks_used[t] 
-}
-
-# Likelihood 
-for (i in 1:nind){
-   # Define latent state at first capture
-   z[i,f[i]] <- 1
-   for (t in (f[i]+1):n.occasions){
-      # State process
-      z[i,t] ~ dbern(mu1[i,t])
-      mu1[i,t] <- phi[i,t-1] * z[i,t-1]
-      # Observation process
-	  lambda_obs[i,t]<- -log(1-p_r[i,t-1])*z[i,t]*theta[i,t-1] + mu_wrong_assign[t-1]
-	  y[i,t] ~ dpois(lambda_obs[i,t])
-      } #t
-   } #i
-}
-",fill = TRUE)
-sink()
-
-sightings_and_fresh<-colSums(CH) # count per year
-
-N_marked<-rle(apply(CH, 1, get.first))$lengths # marked per year
-
-if (length(sightings_and_fresh)>length(N_marked)) N_marked<-c(N_marked, 0)
-
-N_reads<-sightings_and_fresh-N_marked
-N_reads<-N_reads[-1]
-
-sum_N_marks_used<-cbind(cumsum(rle(apply(CH, 1, get.first))$lengths), rle(apply(CH, 1, get.first))$values)
-
-sum_N_marks_used<-sum_N_marks_used[,1]
-
-# Bundle data
-jags.data <- list(y = CH, f = f, nind = dim(CH)[1], n.occasions = dim(CH)[2], sum_N_marks_used=sum_N_marks_used, N_reads=N_reads)
-
-inits <- function(){list(z = known.state.cjs.mult(CH), mean.phi = runif(1, 0, 1), mean.p = runif(1, 0, 1), mean.theta=runif(1, 0, 1))}
-
-# Parameters monitored
-parameters <- c("mean.phi" , "mean.p", "mean.theta")
-
-cjs.c.c.c <- jags.parallel(jags.data, inits, parameters, "cjs-mult-c-c-c.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  export_obj_names=c('cjs.init.z', 'known.state.cjs.mult', 'nb', 'ni', 'nt', 'CH', 'f', 'p'), envir=environment())
-cat('   Done!\n')
-}
-
-Res<-list(cjs.c.c=cjs.c.c, cjs.c.c.c=cjs.c.c.c, CH=CH)
-return(Res)
-}
-
-cat('   Done\n')
+  cat('   Done\n')
 }, echo=FALSE)
