@@ -60,7 +60,7 @@ if (Use_local_data & !'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) 
 ```
 
 ### 0.4 load libraries and source CJSm functions
-We need `R2jags` to run jags code. Note that to run the models you will also have to install jags software (Plummer 2011) from [here]( http://mcmc-jags.sourceforge.net).
+We need `jagsUI` and/or `R2jags`to run jags code. Note that to run the models you will also have to install jags software (Plummer 2011) from [here]( http://mcmc-jags.sourceforge.net).
 
 ```{r}
 
@@ -80,7 +80,7 @@ source('https://git.io/fjPgo')
 For this exersice we simulate data with the function `simul.cjs.multiple.sightings` and then with the function `run_CJSm_c_c_c` estimate two cjs models over these data Phi_dot_P_dot model (CJS-c-c) and Phi_dot_P_dot_Theta_dot (cjsm-c-c-c)
 
 ### 1.1 Define wrapper function to run simulations and run the models output
-
+```{r}
 run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.limit=1.01, max.iter=150000, iter.increment2=10000) {
   CH_input<-CH
   if (run_naive) {
@@ -223,7 +223,7 @@ run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.l
    Res<-list(cjs.c.c=cjs.c.c, cjs.c.c.c=cjs.c.c.c, CH=CH)
    return(Res)
 }
-
+```
 ### 1.2 Define parameters for a sample simulation (Phi=0.9, P=0.9, theta=0.95)
 ```{r}
 n.occasions <- 25                   # Number of capture occasions
