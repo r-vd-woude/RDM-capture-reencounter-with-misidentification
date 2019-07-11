@@ -63,7 +63,6 @@ if (Use_local_data & !'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) 
 We need `jagsUI` and/or `R2jags`to run jags code. Note that to run the models you will also have to install jags software (Plummer 2011) from [here]( http://mcmc-jags.sourceforge.net).
 
 ```{r}
-
 library('jagsUI')
 ```
 
@@ -81,7 +80,9 @@ For this exersice we simulate data with the function `simul.cjs.multiple.sightin
 
 ### 1.1 Define wrapper function to run simulations and run the models output
 ```{r}
-run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.limit=1.01, max.iter=150000, iter.increment2=10000) {
+run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, 
+                         n.adapt=5000, Rhat.limit=1.01, 
+						 max.iter=150000, iter.increment2=10000) {
   CH_input<-CH
   if (run_naive) {
     cat('running naive CJS-c-c model')
@@ -134,7 +135,10 @@ run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.l
    parameters <- c("mean.p", "mean.phi")
 
    # Call JAGS from R 
-   cjs.c.c <- autojags(jags.data, inits, parameters, "cjs-c-c.jags", n.chains = 6, parallel=TRUE, n.cores=6,Rhat.limit=Rhat.limit, n.adapt=n.adapt, max.iter=max.iter, iter.increment=4000)
+   cjs.c.c <- autojags(jags.data, inits, parameters, "cjs-c-c.jags",
+                       n.chains = 6, parallel=TRUE, 
+					   n.cores=6,Rhat.limit=Rhat.limit, n.adapt=n.adapt,
+					   max.iter=max.iter, iter.increment=4000)
    
    cat('   Done!\n')
   } # end of run_naive
@@ -181,7 +185,8 @@ run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.l
           z[i,t] ~ dbern(mu1[i,t])
           mu1[i,t] <- phi[i,t-1] * z[i,t-1]
           # Observation process
-    	  lambda_obs[i,t]<- -log(1-p_r[i,t-1])*z[i,t]*theta.t[t-1] + mu_wrong_assign[t-1]
+    	  lambda_obs[i,t]<- -log(1-p_r[i,t-1])*z[i,t]*theta.t[t-1]
+                             + mu_wrong_assign[t-1]
     	  y[i,t] ~ dpois(lambda_obs[i,t])
         } #t
     } #i
@@ -216,7 +221,11 @@ run_CJSm_c_c_c<-function(CH, run_naive=TRUE, run_CJSm=TRUE, n.adapt=5000, Rhat.l
    parameters <- c("mean.phi" , "mean.p", "mean.theta")
 
    # Call JAGS from R 
-   cjs.c.c.c <- autojags(jags.data, inits, parameters, "cjs-mult-c-c-c.jags", n.chains = 6, parallel=TRUE, n.cores=6,Rhat.limit=Rhat.limit, n.adapt=NULL, max.iter=max.iter, iter.increment= iter.increment2)
+   cjs.c.c.c <- autojags(jags.data, inits, parameters,
+                       "cjs-mult-c-c-c.jags", n.chains = 6, 
+					   parallel=TRUE, n.cores=6, 
+					   Rhat.limit=Rhat.limit, n.adapt=NULL, 
+					   max.iter=max.iter, iter.increment= iter.increment2)
    cat('   Done!\n')
    }
 
@@ -250,18 +259,27 @@ THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 ```
 
 ### 1.3 Run loop for 100 simulations
-Note, the lopp below will try to run 200 models! and it will take time (days). 
+Note, if you turn `Run_everything` to `TRUE`  the loop below will try to run 200 models! and it will take time (days). 
 
 ```
 if (Run_everything) {
 for (i in 1:nRuns) {
    cat('i = ', i, '\n')
    CH <- simul.cjs.multiple.sightings(PHI, P, THETA,  marked)
-   Res_list<-run_CJSm_c_c_c(CH$CH, Rhat.limit=RHat_limit, max.iter=max.iter, iter.increment2=iter.increment2, n.adapt=n.adapt)
-   Mean.c.c.c<-rbind(Mean.c.c.c,c('mean.phi'=Res_list$cjs.c.c.c$mean$mean.phi, 'mean.p'=Res_list$cjs.c.c.c$mean$mean.p, 'mean.theta'=Res_list$cjs.c.c.c$mean$mean.theta, 'deviance'=Res_list$cjs.c.c.c$mean$deviance)) # this is enough for bias.
-   Mean.c.c<-rbind(Mean.c.c,c('mean.phi'=Res_list$cjs.c.c$mean$mean.phi, 'mean.p'=Res_list$cjs.c.c$mean$mean.p, 'deviance'=Res_list$cjs.c.c$mean$deviance)) # this is enough for bias.
+   Res_list<-run_CJSm_c_c_c(CH$CH, Rhat.limit=RHat_limit, 
+                            max.iter=max.iter, 
+							iter.increment2=iter.increment2, 
+							n.adapt=n.adapt)
+   Mean.c.c.c<-rbind(Mean.c.c.c, 
+                   c('mean.phi'=Res_list$cjs.c.c.c$mean$mean.phi, 
+				   'mean.p'=Res_list$cjs.c.c.c$mean$mean.p, 
+				   'mean.theta'=Res_list$cjs.c.c.c$mean$mean.theta,
+				   'deviance'=Res_list$cjs.c.c.c$mean$deviance)) 
+   Mean.c.c<-rbind(Mean.c.c,
+                   c('mean.phi'=Res_list$cjs.c.c$mean$mean.phi, 
+				   'mean.p'=Res_list$cjs.c.c$mean$mean.p, 
+				   'deviance'=Res_list$cjs.c.c$mean$deviance))
 
-   # for coverage we need
    ccc_CI_cur<-cbind(c('mean.phi'=phi[1], 'mean.p'=p[1], 
                     'mean.theta'=theta[1]), 
                   c(Res_list$cjs.c.c.c$q2.5$mean.phi, 
@@ -728,9 +746,11 @@ if (Run_everything) {
 
 cjs.T.c.no_misr <- jags.parallel(jags.data.no_misr,
                            inits.no_misr, parameters, "cjs-T-c.jags",
-						   n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,
+						   n.chains = nc, n.thin = nt,
+						   n.iter = ni, n.burnin = nb,
 						   export_obj_names=c('cjs.init.z', 'known.state.cjs',
-						            'nb', 'ni', 'nt', 'CH_no_misr', 'f_no_misr'))
+						   'nb', 'ni', 'nt', 
+						   'CH_no_misr', 'f_no_misr'))
 
 saveRDS(cjs.T.c.no_misr, 
         file='./results/cjs.T.c.no_misr.RDS')
@@ -840,9 +860,11 @@ nc <- 5
 if (Run_everything) {
    # (BRT ~ 29 min)
    cjsm.T.c.c <- jags.parallel(jags.data, inits, parameters, "cjsm-T-c-c.jags",
-                      n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,
-					  export_obj_names=c('cjs.init.z', 'known.state.cjs.mult',
-					                     'nb', 'ni', 'nt', 'CH', 'f', 'p'))
+                     n.chains = nc, n.thin = nt,
+					 n.iter = ni, n.burnin = nb,
+					 export_obj_names=c('cjs.init.z',
+                       'known.state.cjs.mult', 'nb',
+					   'ni', 'nt', 'CH', 'f', 'p'))
    saveRDS(cjsm.T.c.c, file='./results/cjsm.T.c.c.RDS')
 }
 
