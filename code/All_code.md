@@ -261,7 +261,7 @@ THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 ### 1.3 Run loop for 100 simulations
 Note, if you turn `Run_everything` to `TRUE`  the loop below will try to run 200 models! and it will take time (days). 
 
-```
+```{r}
 if (Run_everything) {
 for (i in 1:nRuns) {
    cat('i = ', i, '\n')
@@ -477,7 +477,7 @@ points(p.bias~ I(X + (X.order-6.5)/14), data=Res,
 ### Panel C
 ##### theta bias
 plot(x=c(0.5,4.5), y=range(-0.3, 0.3), 
-     xaxs='i',, type='n', axes=F, 
+     xaxs='i', type='n', axes=F, 
 	 xlab='Theta', ylab='theta bias')
 
 axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
@@ -512,8 +512,9 @@ points(theta.bias~ I(X + (X.order-6.5)/14), data=Res,
 ##################################
 ### Panel D
 ##### Phi coverage
-plot(x=c(0.5,4.5), y=c(0,1), axs='i', xaxs='i',
-     type='n', axes=F, xlab='Theta', ylab='Phi 95 CI coverage')
+plot(x=c(0.5,4.5), y=c(0,1),  xaxs='i',
+     type='n', axes=F, xlab='Theta', 
+	 ylab='Phi 95 CI coverage')
 
 axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
 axis(2, las=1)
@@ -543,7 +544,8 @@ points(Phi.CI.coverage~ I(X + (X.order-6.5)/14), data=Res,
 ##################################
 ### Panel E
 ##### p coverage
-plot(x=c(0.5,4.5), y=c(0,1), axs='i', type='n', axes=F, xlab='Theta', ylab='p 95 CI coverage')
+plot(x=c(0.5,4.5), y=c(0,1), type='n', axes=F,
+     xlab='Theta', ylab='p 95 CI coverage')
 
 axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
 axis(2, las=1)
@@ -572,7 +574,7 @@ points(p.CI.coverage~ I(X + (X.order-6.5)/14), data=Res,
 ##################################
 ### Panel F
 ##### theta coverage
-plot(x=c(0.5,4.5), y=c(0,1), axs='i', type='n', 
+plot(x=c(0.5,4.5), y=c(0,1),, type='n', 
      axes=F, xlab='Theta', ylab='theta 95 CI coverage')
 
 axis(1, labels=c(1, 0.99, 0.95, 0.9), at=c(1:4))
@@ -1267,7 +1269,7 @@ Res_juveniles<-data.frame(
 #### Plot
 
 ```{r}
-pdf('godwit_figure_2.pdf', 10,5, useDingbats=FALSE)
+#pdf('godwit_figure_2.pdf', 10,5, useDingbats=FALSE)
 Shift=0.1  
 par(mfrow=c(1,2), mar=c(5.1, 4.1, 0.5, 0.5))
   
