@@ -353,7 +353,7 @@ for (i in 1:nRuns) {
 }
 ```
 
-## 1.4 Combine simulation results
+### 1.4 Combine simulation results
 ```{r}
 C_Files<-list.files(path='./results/', 
                     pattern='Sim_study_100_simulations', 
@@ -365,7 +365,7 @@ for (i in 1:length(C_Files)) {
 
 print(Res, digits=3)
 ```
-## 1.5 Make Figure 3
+### 1.5 Make Figure 3
 
 First we prepare indices for colors, color intencity and jitter.
 ```{r}
