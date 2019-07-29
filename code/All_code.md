@@ -687,10 +687,10 @@ inits <- function(){list(phi.mu = 1, phi.beta = 0, mean.p = 0.7,
 parameters <- c("mean.p", "phi.mu", "phi.beta")
 
 # MCMC settings
-ni <- 5000
-nt <- 6
+ni <- 7000
+nt <- 1
 nb <- 2500
-nc <- 5
+nc <- 6
 
 detach('package:jagsUI', unload=TRUE) 
 # we used this package for the first set of simulations
@@ -698,7 +698,7 @@ detach('package:jagsUI', unload=TRUE)
 library(R2jags)
 
 if (Run_everything) {
-# Call JAGS from R (BRT ~ 21 min)
+# Call JAGS from R (BRT ~ 30 min)
 cjs.T.c.with.misidentification <- jags.parallel(jags.data, inits,
                parameters, "cjs-T-c.jags",
 			   n.chains = nc, n.thin = nt,
@@ -739,12 +739,12 @@ parameters <- c("mean.p", "phi.mu", "phi.beta")
 
 # MCMC settings
 ni <- 5000
-nt <- 6
+nt <- 1
 nb <- 2500
-nc <- 5
+nc <- 6
 
 if (Run_everything) {
-# Call JAGS from R (BRT ~ 22 min)
+# Call JAGS from R (BRT ~ 30 min)
 
 cjs.T.c.no_misr <- jags.parallel(jags.data.no_misr,
                            inits.no_misr, parameters, "cjs-T-c.jags",
@@ -796,7 +796,7 @@ for (t in 1:(n.occasions-1)) {
 }
 
 for (t in 1:(n.occasions-1)) {
-   mu_wrong_assign[t] <-  N_reads[t] *(1-theta.t[t]) / N_marks_used[t] 
+   mu_wrong_assign[t] <-  N_reads[t] *(1-theta.t[t]) / (sum_N_marks_used[t]-1)
 }
 
 # Likelihood 
@@ -826,26 +826,14 @@ if (length(sightings_and_fresh)>length(N_marked)) N_marked<-c(N_marked, 0)
 N_reads<-sightings_and_fresh-N_marked
 N_reads<-N_reads[-1]
 
-N_marks_used<-cbind(cumsum(rle(apply(CH, 1, get.first))$lengths),
+sum_N_marks_used<-cbind(cumsum(rle(apply(CH, 1, get.first))$lengths),
                            rle(apply(CH, 1, get.first))$values)
 
-N_marks_used<-N_marks_used[,1]
+sum_N_marks_used<-sum_N_marks_used[,1]
 
 # Bundle data
 jags.data <- list(y = CH, f = f, nind = dim(CH)[1], n.occasions = dim(CH)[2],
-                  N_marks_used=N_marks_used, N_reads=N_reads)
-
-known.state.cjs.mult<- function(ch) {
-  state <- sign(ch)
-  for (i in 1:dim(ch)[1]){
-    n1 <- min(which(ch[i,]>0))
-    n2 <- max(which(ch[i,]>0))
-    state[i,n1:n2] <- 1
-    state[i,n1] <- NA
-  }
-  state[state==0] <- NA
-  return(state)
-}
+                  sum_N_marks_used=sum_N_marks_used, N_reads=N_reads)
 
 inits <- function(){list(phi.mu = 1, phi.beta = 0, mean.p = unique(p),
                          z = known.state.cjs.mult(CH),mean.theta=runif(1, 0.5, 1))}
@@ -855,9 +843,9 @@ parameters <- c("phi.mu", "phi.beta" , "mean.p", "mean.theta")
 
 # MCMC settings
 ni <- 5000
-nt <- 6
+nt <- 1
 nb <- 2500
-nc <- 5
+nc <- 6
 
 if (Run_everything) {
    # (BRT ~ 29 min)
@@ -996,10 +984,10 @@ N_reads<-sightings_and_fresh-N_marked
 # delete first year with zero reads.
 N_reads<-N_reads[-1]
 
-# estiamate how many tags were already used
-N_marks_used<-cbind(cumsum(rle(apply(CH, 1, get.first))$lengths),
+# estimate how many tags were already used
+sum_N_marks_used<-cbind(cumsum(rle(apply(CH, 1, get.first))$lengths),
                            rle(apply(CH, 1, get.first))$values)
-N_marks_used<-N_marks_used[,1]
+sum_N_marks_used<-sum_N_marks_used[,1]
 ```
 Data exploration how many juveniles and adults was marked overall and every year
 ```{r}
@@ -1051,7 +1039,7 @@ for (t in 1:(n.occasions-1)) {
 }
 
 for (t in 1:(n.occasions-1)) {
-   mu_wrong_assign[t] <-  N_reads[t] *(1-theta.t[t]) / N_marks_used[t] 
+   mu_wrong_assign[t] <-  N_reads[t] *(1-theta.t[t]) / (sum_N_marks_used[t]-1)
 }
 
 # Likelihood 
@@ -1075,7 +1063,7 @@ sink()
 #### Bundle data, generate intitials and prepare model run
 ```{r}
 jags.data <- list(y = CH, f = f, nind = dim(CH)[1], n.occasions = dim(CH)[2],
-                  N_reads=N_reads, N_marks_used=N_marks_used, x.Phi=x.Phi,x.P=x.P)
+                  N_reads=N_reads, sum_N_marks_used=sum_N_marks_used, x.Phi=x.Phi,x.P=x.P)
 
 # Initial values
 inits <- function(){list(z = known.state.cjs.mult(CH), phi.t = 
