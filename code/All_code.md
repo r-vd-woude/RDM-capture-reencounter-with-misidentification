@@ -1078,10 +1078,10 @@ inits <- function(){list(z = known.state.cjs.mult(CH), phi.t =
 parameters <- c("phi.t", "p.age", "mean.theta", "sigma2", "p.y")
 
 # MCMC settings
-ni <- 25000
-nt <- 20
-nb <- 5000
-nc <- 5
+ni <- 50000
+nt <- 1
+nb <- 10000
+nc <- 6
 ```
 #### Run the model
 ```{r}
@@ -1186,9 +1186,9 @@ parameters <- c("phi.t", "p.age", "sigma2", "p.y")
 
 # MCMC settings
 ni <- 25000
-nt <- 20
+nt <- 1
 nb <- 5000
-nc <- 5
+nc <- 6
 ```
 
 #### Run the model
@@ -1199,7 +1199,7 @@ if (Run_everything) {
    "cjs-naive-Phi_t_plus_age_plus_year_P_tsm_plus_year_plus_raneff.jags",
    n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb,  
    export_obj_names=
-   c('known.state.cjs', 'nb', 'ni', 'nt', 'CH_flat', 'f', 'x'))
+   c('known.state.cjs', 'nb', 'ni', 'nt', 'CH_flat', 'f', 'x.Phi', 'x.P'))
   saveRDS(cjs.naive.godwits, file='./results/cjs.naive.godwits.RDS')
 }
 
