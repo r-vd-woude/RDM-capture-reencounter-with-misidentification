@@ -1078,10 +1078,10 @@ inits <- function(){list(z = known.state.cjs.mult(CH), phi.t =
 parameters <- c("phi.t", "p.age", "mean.theta", "sigma2", "p.y")
 
 # MCMC settings
-ni <- 50000
-nt <- 1
-nb <- 10000
-nc <- 6
+ni <- 25
+nt <- 20
+nb <- 5000
+nc <- 5
 ```
 #### Run the model
 ```{r}
@@ -1186,9 +1186,9 @@ parameters <- c("phi.t", "p.age", "sigma2", "p.y")
 
 # MCMC settings
 ni <- 25000
-nt <- 1
+nt <- 20
 nb <- 5000
-nc <- 6
+nc <- 5
 ```
 
 #### Run the model
