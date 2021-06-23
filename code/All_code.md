@@ -565,7 +565,8 @@ Res_Theta_long<-Res %>% select(starts_with('Theta.'), Model, N_models, Phi.true,
 names(Res_Theta_long)[1:13]<-substr(names(Res_Theta_long)[1:13], 7, 100)
 Res_Theta_long$Theta.true<-Res_Theta_long$true
 
-Res_long<-bind_rows(Res_Phi_long, Res_P_long, Res_Theta_long) %>% mutate(Parameter=factor(Parameter, levels=c('Phi', 'P', 'Theta')))
+Res_long<-bind_rows(Res_Phi_long, Res_P_long, Res_Theta_long) %>% 
+          mutate(Parameter=factor(Parameter, levels=c('Phi', 'P', 'Theta')))
 
 ```{r}
 
@@ -1426,7 +1427,8 @@ for (t in 1:(n.occasions-1)) {
 		
        Lambda_obs_sum[t]<-sum(lambda_obs[1:(sum_N_marks_used[t]),t])
 	   
-       P_multin[1:(sum_N_marks_used[t]),t] <- lambda_obs[1:(sum_N_marks_used[t]),t]/ifelse(Lambda_obs_sum[t]==0, 1, Lambda_obs_sum[t])
+       P_multin[1:(sum_N_marks_used[t]),t] <- lambda_obs[1:(sum_N_marks_used[t]),t]/
+                                     ifelse(Lambda_obs_sum[t]==0, 1, Lambda_obs_sum[t])
 	   
 	   N_reads[t]~ dpois(Lambda_obs_sum[t])
 	   
@@ -1454,7 +1456,8 @@ inits <- function(){list(z = known.state.cjs.mult(CH),
 	  }
 
 # Parameters monitored
-parameters <- c("phi.t", "lambda.age", "mean.theta", "sigma2", "lambda.sigma2", "lambda.y", 'phi.beta', 'phi.mu', 'phi.average', "theta.sigma2", "theta.t")
+parameters <- c("phi.t", "lambda.age", "mean.theta", "sigma2", "lambda.sigma2",
+               "lambda.y", 'phi.beta', 'phi.mu', 'phi.average', "theta.sigma2", "theta.t")
 
 # MCMC settings
 max.iter<-50#4000
@@ -1480,7 +1483,9 @@ if (Run_everything) {
  rdma.godwits<-rdma_theta_t_WI_10_25
  # here I do more updates to reach convergence
  
- # the final model outcome exceeds the 100 Mb, allowed for free storage on GitHub, so I will not cut it in pieces are glue together after reading.
+ # the final model outcome exceeds the 100 Mb,
+ # allowed for free storage on GitHub, so I will now cut it in pieces 
+ # and glue together after reading.
  
  rdma.godwits.small<-rdma.godwits
  rdma.godwits.chunk.1<-rdma.godwits$sims.list
