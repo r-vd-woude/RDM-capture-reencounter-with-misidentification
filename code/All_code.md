@@ -1853,7 +1853,7 @@ print(plogis(quantile(cjs.godwits$sims.list$p.y +
 P.S. The html file from this markdown can be recereated with folloing code
 ```{r eval=FALSE}
 download.file(
-   'https://raw.githubusercontent.com/eldarrak/CJS-with-misidentification/master/code/All_code.md',
+   'https://raw.githubusercontent.com/eldarrak/RDM-capture-reencounter-with-misidentification/master/code/All_code.md',
    'tmp.rmd', cacheOK = FALSE)
 rmarkdown::render('tmp.rmd', output_format = 'html_document',
         output_options=list(toc=TRUE, toc_float=list(collapsed=FALSE)), 
