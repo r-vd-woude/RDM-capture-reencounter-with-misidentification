@@ -1171,8 +1171,6 @@ for (i in 1:nRuns) {
 }
 ```
 
-
-
 ### 2.6 Plot the results
 
 #### load model outputs
@@ -1240,7 +1238,6 @@ RDMa_UCI<-sapply(XX, FUN=function(x)
 ```
 #### Plot
 ```{r}
-
 library(dplyr)
 library(ggsci)
 
@@ -1270,12 +1267,10 @@ ggplot(data = all_models_T, aes(x=XX,
 		 theme_bw() +
 		 theme(legend.position = "bottom") 
 
-
 ggsave("Slopes_figure_22_06_2020.pdf", width = 10, height = 10, units = "cm", dpi=600)		  
-		 
 ```
 
-## 3 Black-tailed godwits annual survival
+## 3. Black-tailed godwits annual survival
 Here we analyse capture-resight dataset of black-tailed godwits captured in Friesland, The Netherlands. The raw data consists of three files:
 - the main dataset `black-tailed_godwits_CH.csv`;
 - `black-tailed_x.Phi.csv` - the matrix for Phi that indicates whether individual [i,] is juvenile `1` or adult `2` at the time [,t]
@@ -1343,7 +1338,7 @@ for (i in 1:nind){
       phi[i,t] <- phi.t[t, x.Phi[i,t]]
       #logit(p_r[i,t]) <- p.age[x.P[i,t]] + p.y[t]  
 	  #lambda_true[i,t]<- -log(1-p_r[i,t]) + lambda.epsilon[i]
-      log(lambda_true[i,t])<- lambda.age[x.P[i,t]] + lambda.y[t]   + lambda.epsilon[i]
+      log(lambda_true[i,t])<- lambda.age[x.P[i,t]] + lambda.y[t] + lambda.epsilon[i]
 
 	  theta[i,t] <- theta.t[t]
       } #t
@@ -1782,29 +1777,27 @@ print(quantile(rdma.godwits$sims.list$phi.beta[,1],
          c(0.025, 0.5, 0.975)), digits=3)
 	   		 
 # average adult resighting probability adults
-print(1-exp(c(-quantile(rdma.godwits$sims.list$lambda.y,
+print(1-exp(-exp(quantile(rdma.godwits$sims.list$lambda.y,
        c(0.025, 0.5, 0.975)))), digits=3)
 
 # average expected number of sightings adults   
-print(quantile(rdma.godwits$sims.list$lambda.y,
-       c(0.025, 0.5, 0.975)), digits=3)
+print(exp(quantile(rdma.godwits$sims.list$lambda.y,
+       c(0.025, 0.5, 0.975))), digits=3)
 
 # Average 1st year juvenile resighting rate
-print(1-exp(-plogis(quantile(rdma.godwits$sims.list$lambda.y+
+print(1-exp(-exp(quantile(rdma.godwits$sims.list$lambda.y+
              rdma.godwits$sims.list$lambda.age[,1],
 			 c(0.025, 0.5, 0.975)))), digits=3)
 
 # Average 2nd year juvenile resighting rate
-print(1-exp(-plogis(quantile(rdma.godwits$sims.list$lambda.y+
+print(1-exp(-exp(quantile(rdma.godwits$sims.list$lambda.y+
              rdma.godwits$sims.list$lambda.age[,2],
 			 c(0.025, 0.5, 0.975)))), digits=3)
 
 # Average adults marked as chicks resighting rate
-print(1-exp(-plogis(quantile(rdma.godwits$sims.list$lambda.y+
+print(1-exp(-exp(quantile(rdma.godwits$sims.list$lambda.y+
              rdma.godwits$sims.list$lambda.age[,3],
 			 c(0.025, 0.5, 0.975)))), digits=3)
-
-
 # and theta
 print(plogis(quantile(rdma.godwits$sims.list$mean.theta,
            c(0.025, 0.5, 0.975))), digits=3)
@@ -1816,39 +1809,40 @@ print(sd(rdma.godwits$sims.list$mean.theta))
 
 ```{r}
 # average survival probability of adults
-print(quantile(cjs.naive.godwits$BUGSoutput$sims.list$phi.t[,,2],
+print(quantile(cjs.godwits$sims.list$phi.average[,2],
          c(0.025, 0.5, 0.975)), digits=3)
 
 # average survival probability of juveniles
-print(quantile(cjs.naive.godwits$BUGSoutput$sims.list$phi.t[,,1],
+print(quantile(cjs.godwits$sims.list$phi.average[,1],
          c(0.025, 0.5, 0.975)), digits=3)
 
-# average adult resighting probability
-print(plogis(quantile(cjs.naive.godwits$BUGSoutput$sims.list$p.y,
-       c(0.025, 0.5, 0.975))), digits=5)
+# slope over time in adult survival probability 		 
+print(quantile(cjs.godwits$sims.list$phi.beta[,2],
+         c(0.025, 0.5, 0.975)), digits=3)
 
-# average expected number of sightings	   
-print(-log(1-plogis(quantile(cjs.naive.godwits$BUGSoutput$sims.list$p.y,
-       c(0.025, 0.5, 0.975)))), digits=3)
+# slope over time in juvenile survival probability 		 
+print(quantile(cjs.godwits$sims.list$phi.beta[,1],
+         c(0.025, 0.5, 0.975)), digits=3)
+	   		 
+# average adult resighting probability adults
+print(plogis(quantile(cjs.godwits$sims.list$p.y,
+       c(0.025, 0.5, 0.975))), digits=3)
 
 # Average 1st year juvenile resighting rate
-print(plogis(quantile(cjs.naive.godwits$BUGSoutput$sims.list$p.y+
-             cjs.naive.godwits$BUGSoutput$sims.list$p.age[,1],
+print(plogis(quantile(cjs.godwits$sims.list$p.y+
+             cjs.godwits$sims.list$p.age[,1],
 			 c(0.025, 0.5, 0.975))), digits=3)
 
 # Average 2nd year juvenile resighting rate
-print(plogis(quantile(cjs.naive.godwits$BUGSoutput$sims.list$p.y+
-             cjs.naive.godwits$BUGSoutput$sims.list$p.age[,2],
+print(plogis(quantile(cjs.godwits$sims.list$p.y+
+             cjs.godwits$sims.list$p.age[,2],
 			 c(0.025, 0.5, 0.975))), digits=3)
 
-# Average 2nd year juvenile resighting rate
-print(plogis(quantile(cjs.naive.godwits$BUGSoutput$sims.list$p.y+
-             cjs.naive.godwits$BUGSoutput$sims.list$p.age[,3],
+# Average adults marked as chicks resighting rate
+print(plogis(quantile(cjs.godwits$sims.list$p.y +
+             cjs.godwits$sims.list$p.age[,3],
 			 c(0.025, 0.5, 0.975))), digits=3)
 
-# sigma - RE on resighting prob.
-print(sqrt(quantile(cjs.naive.godwits$BUGSoutput$sims.list$sigma2,
-           c(0.025, 0.5, 0.975))), digits=3)
 ```
 
 P.S. The html file from this markdown can be recereated with folloing code
