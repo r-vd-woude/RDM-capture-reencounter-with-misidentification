@@ -48,7 +48,6 @@ if (Use_local_data) {
 if (Use_local_data & !'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) {
     stop('data directory not found') 
 }
-
 ```
 
 ### 0.4 load libraries and source CJSm functions
@@ -62,17 +61,15 @@ Now we source helper functions
 ```{r}
 # general functions
 source('https://git.io/fhhtZ')
-
-# some locally used functions
-#source('https://git.io/fjPgo')
 ```
 
-## 1 Simulate and solve Phi_dot_P_dot_Theta_dot models
+## 1. Simulate and solve Phi_dot_P_dot_Theta_dot models
 For this exersice we simulate data with the function `simul.cjs.multiple.sightings` and then with the function `run_CJSm_c_c_c` estimate two cjs models over these data Phi_dot_P_dot model (CJS-c-c) and Phi_dot_P_dot_Theta_dot (cjsm-c-c-c)
 
 ### 1.1 Define wrapper function to run simulations and run the models
 ```{r}
-run_c_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.iter=200000, iter.increment=5000, models.to.run=c('CJS', 'RDM', 'RDMa')) {
+run_c_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.iter=200000, 
+                           iter.increment=5000, models.to.run=c('CJS', 'RDM', 'RDMa')) {
   # this function runs Phi_dot_p_dot_Theta_dot models
   Res<-list(CH=CH)
   
@@ -198,7 +195,8 @@ run_c_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.it
             mu1[i,t] <- phi[i,t-1] * z[i,t-1]
             # Observation process
             lambda_obs[i,t-1]<- lambda_true[i,t-1]*z[i,t]*theta.t[t-1]+
-		                      Lambda_z_sum[t-1] -							  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
+		                    Lambda_z_sum[t-1] -
+  						    lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
           } #t
         } #i
 	
@@ -264,7 +262,8 @@ run_c_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.it
             mu1[i,t] <- phi[i,t-1] * z[i,t-1]
             # Observation process
             lambda_obs[i,t-1]<- lambda_true[i,t-1]*z[i,t]*theta.t[t-1]+
-		                      Lambda_z_sum[t-1] -							  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
+		                   Lambda_z_sum[t-1] -	
+   						   lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
           } #t
         } #i
 	
@@ -300,14 +299,13 @@ run_c_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.it
    }
    return(Res)
 }
-
 ```
 
 ### 1.2 Define parameters for a sample simulation (Phi=0.9, P=0.9, theta=0.95)
 
 ```{r}
-n.occasions <- 5                   # Number of capture occasions
-n.marked <- 15             # 
+n.occasions <- 5                       # Number of capture occasions
+n.marked <- 15                         # Number marked each year
 marked <- rep(n.marked, n.occasions-1) # Annual number of newly marked individuals
 
 Phi_dot=0.9
@@ -492,7 +490,7 @@ for (i in 1:nRuns) {
 
 ```
 
-### 1.4 Make Figure 2
+### 1.4 Make Figure 1
 
 load packages and data
 ```{r}
@@ -578,8 +576,10 @@ p.bias <- ggplot(data = Res_long, aes(x=factor(Theta.true),
                color=as.factor(Model),  group=1)) +
 		 xlab('Theta values') +
 		 ylab('Phi bias') +
-         geom_linerange(aes(x= factor(Theta.true), ymin=bias.lci,  ymax=bias.uci), position=position_dodge2(width=0.8)) + 
-	     geom_point(aes(x= factor(Theta.true), y=bias.median,  shape = factor(Phi.true)), position=position_dodge2(width=0.8), size=1.5) +
+         geom_linerange(aes(x= factor(Theta.true), ymin=bias.lci,  ymax=bias.uci), 
+		                position=position_dodge2(width=0.8)) + 
+	     geom_point(aes(x= factor(Theta.true), y=bias.median,  shape = factor(Phi.true)), 
+		                position=position_dodge2(width=0.8), size=1.5) +
 	     facet_grid( P.true ~ Parameter ,labeller = labeller(.rows = label_both, .cols = label_both)) +
 		 geom_hline( aes(yintercept = 0),  colour = grey(0.5), linetype='dashed') +
 		 theme_bw()+
@@ -594,7 +594,7 @@ p.bias
 ggsave("bias_25_year.pdf", width = 20, height = 20, units = "cm", dpi=600)		  
 ```
 
-### 1.5 Make Figure 3
+### 1.5 Make Figure 2
 
 This figure is somewhat similat to the previous one, but uses simulations where animals were marked only at the first occasion.
 
@@ -700,7 +700,8 @@ p.Theta.bias <- ggplot(data = Res, aes(x=factor(Theta.true),
 		 xlab('Theta values') +
 		 ylab('Theta') +
 		 geom_hline( aes(yintercept = 0),  colour = grey(0.5), linetype='dashed') +
-         geom_linerange(aes(x= factor(Theta.true), ymin=Theta.bias.lci,  ymax=Theta.bias.uci), position=position_dodge2(width=0.5)) + 
+         geom_linerange(aes(x= factor(Theta.true), ymin=Theta.bias.lci,  ymax=Theta.bias.uci),
+              		 position=position_dodge2(width=0.5)) + 
 	     geom_point(aes(x= factor(Theta.true), y=Theta.bias.median), position=position_dodge2(width=0.5)) +
 	     facet_grid( P.true ~ N.marked ,labeller = labeller(.rows = label_both, .cols = label_both)) +
 		 theme_bw() +
@@ -721,7 +722,8 @@ In this part we simulate data with no trend in survival over time and then run C
 
 ```{r}
 
-run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.iter=200000, iter.increment=5000, models.to.run=c('CJS', 'RDM', 'RDMa')) {
+run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, m
+        ax.iter=200000, iter.increment=5000, models.to.run=c('CJS', 'RDM', 'RDMa')) {
   # this function runs Phi_dot_p_dot_Theta_dot models
   Res<-list(CH=CH)
   
@@ -771,7 +773,8 @@ run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.it
     sink()
    
     # Bundle data
-    jags.data <- list(y = CH_flat, f = f, nind = dim(CH_flat)[1], n.occasions = dim(CH_flat)[2])
+    jags.data <- list(y = CH_flat, f = f, nind = dim(CH_flat)[1], 
+	                  n.occasions = dim(CH_flat)[2])
 
     inits <- function(){list(phi.mu = rnorm(1, 0,1), 
                          phi.beta = rnorm(1, 0,0.5),
@@ -860,7 +863,8 @@ run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.it
             mu1[i,t] <- phi[i,t-1] * z[i,t-1]
             # Observation process
             lambda_obs[i,t-1]<- lambda_true[i,t-1]*z[i,t]*theta.t[t-1]+
-		                      Lambda_z_sum[t-1] -							  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
+		                Lambda_z_sum[t-1] -
+                        lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
           } #t
         } #i
 	
@@ -930,7 +934,8 @@ run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, max.it
             mu1[i,t] <- phi[i,t-1] * z[i,t-1]
             # Observation process
             lambda_obs[i,t-1]<- lambda_true[i,t-1]*z[i,t]*theta.t[t-1]+
-		                      Lambda_z_sum[t-1] -							  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
+		                  Lambda_z_sum[t-1] -
+  						  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
           } #t
         } #i
 	
@@ -983,13 +988,11 @@ PHI <- matrix(phi, ncol = n.occasions-1, nrow = sum(marked))
 P <- matrix(p, ncol = n.occasions-1, nrow = sum(marked))
 THETA<-matrix(theta, ncol = n.occasions-1, nrow = sum(marked))
 
-
 RHat_limit=1.01
 max.iter=8000
 n.adapt=4000
 iter.increment=4000
 nRuns=5
-
 ```
 ### 2.2 run models
 ```{r}
@@ -1078,7 +1081,8 @@ for (i in 1:nRuns) {
     	Output_line_RDM<-data.frame(Model='RDM', 
             Phi.true=phi[1], P.true=p[1], N.marked = marked[1], Theta.true=theta[1],
             Phi.mu=Res_list$RDM$mean$phi.mu, Phi.beta=Res_list$RDM$mean$phi.mu,
-			Phi.mean =Res_list$RDM$mean$mean.phi, P.mean =Res_list$RDM$mean$mean.p, Theta.mean=Res_list$RDM$mean$mean.theta, 
+			Phi.mean =	Res_list$RDM$mean$mean.phi, P.mean =Res_list$RDM$mean$mean.p
+			           , Theta.mean=Res_list$RDM$mean$mean.theta, 
 			Deviance =Res_list$RDM$mean$deviance, 
 			Phi.CI.width =CI_cur.RDM[1,3]-CI_cur.RDM[1,2],
 			P.CI.width=CI_cur.RDM[2,3]-CI_cur.RDM[2,2], Theta.CI.width=CI_cur.RDM[3,3]-CI_cur.RDM[3,2],
@@ -1121,7 +1125,8 @@ for (i in 1:nRuns) {
     	Output_line_RDMa<-data.frame(Model='RDMa', 
             Phi.true=phi[1], P.true=p[1], N.marked = marked[1], Theta.true=theta[1],
             Phi.mu=Res_list$RDMa$mean$phi.mu, Phi.beta=Res_list$RDMa$mean$phi.mu,
-			Phi.mean =Res_list$RDMa$mean$mean.phi, P.mean =Res_list$RDMa$mean$mean.p, Theta.mean=Res_list$RDMa$mean$mean.theta, 
+			Phi.mean =Res_list$RDMa$mean$mean.phi, P.mean =Res_list$RDMa$mean$mean.p,
+			Theta.mean=Res_list$RDMa$mean$mean.theta, 
 			Deviance =Res_list$RDMa$mean$deviance, 
 			Phi.CI.width =CI_cur.RDMa[1,3]-CI_cur.RDMa[1,2],
 			P.CI.width=CI_cur.RDMa[2,3]-CI_cur.RDMa[2,2], Theta.CI.width=CI_cur.RDMa[3,3]-CI_cur.RDMa[3,2],
@@ -1143,11 +1148,10 @@ for (i in 1:nRuns) {
 			Phi.bias = Res_list$RDMa$mean$mean.phi-phi[1],
 			P.bias = Res_list$RDMa$mean$mean.p-p[1],
 			Theta.bias = Res_list$RDMa$mean$mean.theta-theta[1])
-
 	
     	Output_df<-rbind(Output_df, Output_line_RDMa)		
 	}	
-	
+
    ###
    # once in e.g. 10 runs we will save the result..
    if (i%%10 ==0) { 
@@ -1165,7 +1169,7 @@ for (i in 1:nRuns) {
 	  
    save(Output_df, file=Filename)
 }
-
+```
 
 
 
@@ -1408,7 +1412,8 @@ for (t in 1:(n.occasions-1)) {
           mu1[i,t] <- phi[i,t-1] * z[i,t-1]
           # Observation process
           lambda_obs[i,t-1]<- lambda_true[i,t-1]*z[i,t]*theta.t[t-1]+
-		                      Lambda_z_sum[t-1] -							  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
+		                  Lambda_z_sum[t-1] -
+ 						  lambda_true[i,t-1]*z[i,t]*(1-theta.t[t-1])/(sum_N_marks_used[t-1]-1)
         } #t
     } #i
 	
