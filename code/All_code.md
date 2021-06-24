@@ -1177,11 +1177,11 @@ for (i in 1:nRuns) {
 #### load model outputs
 We have repeated the runds above 100 times, and combined the results into a data.frame.
   
-saveRDS(Res_sim_trend, file='Res_sim_trend.RDS')
+saveRDS(Res_sim_trend, file='./results/Res_sim_trend.RDS')
 
 ```{r}
 # look at the bias in the results from CJS model.
-Res_sim_trend<-readRDS('Res_sim_trend.RDS') 
+Res_sim_trend<-readRDS('./results/Res_sim_trend.RDS') 
   
 XX<-seq(1, 25, by=1)  
 Res_sim_trend_CJS_no_misr<-Res_sim_trend %>% filter(Model=='CJS_no_misr')
