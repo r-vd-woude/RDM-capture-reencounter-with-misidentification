@@ -723,8 +723,8 @@ In this part we simulate data with no trend in survival over time and then run C
 
 ```{r}
 
-run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, m
-        ax.iter=200000, iter.increment=5000, models.to.run=c('CJS', 'RDM', 'RDMa')) {
+run_T_c_c_models<-function(CH, n.chains=6,  n.adapt=NULL, RHat_limit=1.1, 
+             max.iter=200000, iter.increment=5000, models.to.run=c('CJS', 'RDM', 'RDMa')) {
   # this function runs Phi_dot_p_dot_Theta_dot models
   Res<-list(CH=CH)
   
