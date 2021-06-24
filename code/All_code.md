@@ -1181,10 +1181,6 @@ saveRDS(Res_sim_trend, file='Res_sim_trend.RDS')
 
 ```{r}
 # look at the bias in the results from CJS model.
-
-summary(Res_sim_trend$Phi.beta[Res_sim_trend$Model=='CJS'])
-
-
 Res_sim_trend<-readRDS('Res_sim_trend.RDS') 
   
 XX<-seq(1, 25, by=1)  
