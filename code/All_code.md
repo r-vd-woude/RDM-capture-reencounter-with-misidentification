@@ -50,7 +50,7 @@ if (Use_local_data & !'data' %in% list.dirs(full.names=FALSE, recursive=FALSE)) 
 }
 ```
 
-### 0.4 load libraries and source CJSm functions
+### 0.4 load libraries and source functions
 We need `jagsUI` to run jags code. Note that to run the models you will also have to install jags software (Plummer 2011) from [here]( http://mcmc-jags.sourceforge.net).
 
 ```{r}
@@ -64,7 +64,7 @@ source('https://git.io/fhhtZ')
 ```
 
 ## 1. Simulate and solve Phi_dot_P_dot_Theta_dot models
-For this exersice we simulate data with the function `simul.cjs.multiple.sightings` and then with the function `run_CJSm_c_c_c` estimate two cjs models over these data Phi_dot_P_dot model (CJS-c-c) and Phi_dot_P_dot_Theta_dot (cjsm-c-c-c)
+For this exersice we simulate data with the function `simul.cjs.multiple.sightings` and then with the function `run_c_c_c_models` estimate CJS, RDM and RDMa models over these data.
 
 ### 1.1 Define wrapper function to run simulations and run the models
 ```{r}
@@ -587,7 +587,7 @@ p.bias <- ggplot(data = Res_long, aes(x=factor(Theta.true),
 		 scale_shape(name= 'Phi value') +
 		 scale_color_npg(name='Model',
             breaks=c('CJS_naive', 'CJSm_ccc_multinom', 'CJSm_ccc_multinom_approx'),
-            labels=c('Naive CJS', 'CJSm', 'CJSm approx')) +
+            labels=c('Naive CJS', 'RDM', 'RDMa')) +
 		 theme(legend.position = "bottom") 
 
 p.bias
@@ -1273,7 +1273,7 @@ Here we analyse capture-resight dataset of black-tailed godwits captured in Frie
 - `black-tailed_x.Phi.csv` - the matrix for Phi that indicates whether individual [i,] is juvenile `1` or adult `2` at the time [,t]
 - `black-tailed_x.P.csv` - the matrix with information on whether individual [i,] at time [,t] is 1st year juvenile `1`, 2nd year juvenile `2`, adult marked as juvenile `3` or adult marked as breeding adult `4`.
 
-### 3.1 CJSm model with black-tailed godwit data
+### 3.1 RDM model with black-tailed godwit data
 
 #### Read and prepare the data
 
@@ -1305,7 +1305,7 @@ x.Phi<-x.Phi[Order,]
 markedas<-markedas[Order]
 
 # Make sure that at the year of marking the value is 1 (not more)!
-# this is very important for CJSm model
+# this is very important for RDM model
 for (i in 1:nrow(CH)) {
    CH[i, f[i]]<-1
 }
